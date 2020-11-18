@@ -1,0 +1,102 @@
+---
+title: "TOUA_visu1"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Creation colonne + tidy data
+Il n y a a pas de collone representant le pourcentage de changement en eCO2 pour le Carbonne
+
+```{r call1}
+library(tidyr)
+library(dplyr)
+```
+```{r}
+toua <- read.csv2("TOUA_phenotypes.csv")
+head(toua)
+```
+
+```{r}
+toua$C_change <- round(((toua$C_eCo2-toua$C_aCo2)/toua$C_aCo2)*100, digits = 2)
+toua_ch <- select(toua,"genotype"|contains("change"))
+
+# Passer en format long avec gather
+
+toua_chl <- gather(data = toua_ch, key = "element", value = "valeur", 2:8)
+head(toua_chl)
+```
+
+## Premieres Visus
+Objectif = Visualiser la variation moyennes des mesures pour chaque element en eCO2 par rapport au a CO2
+En primer representation des moyennes et ecart type de ces variations (pour "reproduire" ce qui a été observé chez le riz)
+
+```{r}
+library(ggplot2)
+library(hrbrthemes)
+library(viridis)
+```
+
+```{r}
+ggplot(toua_chl, aes(element, valeur, fill = element))+
+  stat_summary(fun = mean, geom = "bar") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2)+
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed", size = 1) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme_bw()
+```
+Plusieurs "surprises" : 1) On observe pas vraiment de hausse des taux de Carbonne mesurés (contrairement à ce qui a été vu chez le riz par exemple)
+                        2 ) On n a pas une diminution drastique de la concentration dans les autres elements
+                        3) Les ecarts type suggere une forte variabilité dans les populations
+                        
+On veut donc avoir une meilleur idée de la distribution des valeurs mesurés pour chque element donc on fait un violin plot
+
+```{r violinchange}
+ggplot(toua_chl, aes(x = element, y=valeur, fill = element)) +
+  geom_violin()
+```
+
+
+```{r violinchange2}
+ggplot(toua_chl, aes(x = element, y=valeur, fill = element)) +
+  geom_violin()+
+  ylim(-100,500)
+```
+# Probleme
+Ici on a une distribution tellement grande pour certains element (Zn) qu on ai obligé de couper le graphe. Peut être qu'en utilisant une echelle log ça serait mieux. dans ce cas on ne peut pas travailler avec des pourcentages de variations (qui contiennet des valeurs negatives) on doit donc plutot calculer le fold change 
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+toua_FC <- toua
+toua_FC$C_FC <- toua$C_eCo2/toua$C_aCo2
+toua_FC$Cu_FC <- toua$Cu_eCo2/toua$Cu_aCo2
+toua_FC$Fe_FC <- toua$Fe_eCo2/toua$Fe_aCo2
+toua_FC$Mg_FC <- toua$Mg_eCo2/toua$Mg_aCo2
+toua_FC$Mn_FC <- toua$Mn_eCo2/toua$Mn_aCo2
+toua_FC$N_FC <- toua$N_eCo2/toua$N_aCo2
+toua_FC$Na_FC <- toua$Na_eCo2/toua$Na_aCo2
+toua_FC$Zn_FC <- toua$Zn_eCo2/toua$Zn_aCo2
+
+toua_FC <- select(toua_FC,"genotype"|contains("FC"))
+
+toua_FC <- gather(data = toua_FC, key = "element", value = "valeur", 2:9)
+```
+```{r}
+library(hrbrthemes)
+  
+```
+
+```{r}
+ggplot(toua_FC, aes(x = element, y=valeur, fill = element)) +
+  geom_violin()+
+  geom_hline(yintercept = 1) +
+  scale_y_continuous( breaks= waiver(), trans = "log10") +
+  scale_fill_viridis(discrete=TRUE) +
+  scale_color_viridis(discrete=TRUE) 
+```
+
+C'est pas mieux.Mias au moins on n a pas coupé le graph. Est ce vraiment une echelle log ? 
