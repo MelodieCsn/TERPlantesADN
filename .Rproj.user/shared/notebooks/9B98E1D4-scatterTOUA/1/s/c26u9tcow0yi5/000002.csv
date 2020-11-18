@@ -1,0 +1,4 @@
+"0","df = toua[-c(61),]"
+"0","attach(df)"
+"0","plot(Zn_aCo2, Zn_eCo2, main=""Scatterplot Zinc"","
+"0","   xlab=""Zn_aCo2"", ylab=""Zn_eCo2"", pch=19) "

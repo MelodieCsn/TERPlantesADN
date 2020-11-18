@@ -1,0 +1,1 @@
+{"frames":[{"func":"ggplot(toua_chl, aes(element, valeur, fill = element))","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0}],"message":"Error in ggplot(toua_chl, aes(element, valeur, fill = element)) : \n  objet 'toua_chl' introuvable\n"}

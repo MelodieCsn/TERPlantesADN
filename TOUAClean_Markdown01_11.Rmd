@@ -1,0 +1,255 @@
+---
+title: "[M1 MIASHS - TER] Visualisation du dataset TOUA"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Introduction
+
+La première étape de notre projet de TER consiste à analyser trois jeux de données sur des arabidopsis pour comprendre comment des conditions de fort CO2 impactent la quantité de nutriments qu'elles produisent. Vous trouverez ci-après l'analyse du premier dataset dont nous disposons qui s'appelle TOUA.
+
+## Ouverture du csv
+
+```{r call1, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyr)
+library(dplyr)
+```
+```{r}
+toua <- read.csv2("TOUA_phenotypes.csv")
+head(toua)
+```
+
+## Rajout de la colonne de Changement pour le Carbonne et le cuivre
+
+```{r message=FALSE, warning=FALSE}
+toua$C_change <- round(((toua$C_eCo2-toua$C_aCo2)/toua$C_aCo2)*100, digits = 2)
+toua$Cu_change <- round(((toua$Cu_eCo2-toua$Cu_aCo2)/toua$Cu_aCo2)*100, digits = 2)
+```
+
+## Identification des outliers
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+attach(toua)
+plot(Fe_aCo2, Fe_eCo2, main="Scatterplot Fe",
+     xlab="Fe_aCo2", ylab="Fe_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Fe_eCo2~Fe_aCo2), col="red") # regression line (y~x)
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+attach(toua)
+plot(Zn_aCo2, Zn_eCo2, main="Scatterplot Zinc",
+     xlab="Zn_aCo2", ylab="Zn_eCo2") 
+abline(lm(Zn_eCo2~Zn_aCo2), col="red") # regression line (y~x)
+abline(0,1, col = "blue")
+```
+
+Comme le montrent ces deux Scatter plots,certaines valeurs pour certains éléments sont très singulières, et après discussion avec nos encadrants nous en avons conclu qu'il s'agit d'erreurs de mesures qui ne peuvent pas exister en réalité. Nous allons donc les supprimer.
+
+## Suppression des outliers 
+ Nous avons 
+```{r}
+toua_no_out <- toua
+k= 3
+for (i in 2:17) {
+  binf <- median(toua[,i]) - k* mad(toua[,i])
+  bsup <- median(toua[,i]) + k* mad(toua[,i])
+  outlier_idx <- which(toua_no_out[,i] < binf | toua_no_out[,i] > bsup)
+    if (length(outlier_idx) == 0) {
+      toua_no_out = toua_no_out
+    }
+    else{
+      toua_no_out = toua_no_out[-c(outlier_idx),]
+      }
+  print(outlier_idx)
+  }
+  
+```
+
+## Modification des colonnes de changement sans les outliers
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+# Suppression des anciennes colonnes
+toua_no_out_no_ch <- subset (toua_no_out, select = -c(Fe_change:Cu_change))
+toua_no_out <- subset(toua_no_out_no_ch, select = -c(N_change))
+
+# Ajout des nouvelles colonnes
+
+
+toua_no_out$N_change <- round(((toua_no_out$N_eCo2-toua_no_out$N_aCo2)/toua_no_out$N_aCo2)*100, digits = 2)
+
+toua_no_out$Fe_change <- round(((toua_no_out$Fe_eCo2-toua_no_out$Fe_aCo2)/toua_no_out$Fe_aCo2)*100, digits = 2)
+
+toua_no_out$Mg_change <- round(((toua_no_out$Mg_eCo2-toua_no_out$Mg_aCo2)/toua_no_out$Mg_aCo2)*100, digits = 2)
+
+toua_no_out$Mn_change <- round(((toua_no_out$Mn_eCo2-toua_no_out$Mn_aCo2)/toua_no_out$Mn_aCo2)*100, digits = 2)
+
+toua_no_out$Na_change <- round(((toua_no_out$Na_eCo2-toua_no_out$Na_aCo2)/toua_no_out$Na_aCo2)*100, digits = 2)
+
+toua_no_out$Zn_change <- round(((toua_no_out$Zn_eCo2-toua_no_out$Zn_aCo2)/toua_no_out$Zn_aCo2)*100, digits = 2)
+
+toua_no_out$C_change <- round(((toua_no_out$C_eCo2-toua_no_out$C_aCo2)/toua_no_out$C_aCo2)*100, digits = 2)
+
+toua_no_out$Cu_change <- round(((toua_no_out$Cu_eCo2-toua_no_out$Cu_aCo2)/toua_no_out$Cu_aCo2)*100, digits = 2)
+
+head(toua_no_out)
+
+toua_ch <- select(toua_no_out,"genotype"|contains("change"))
+
+```
+
+## Passage en format long avec gather 
+
+```{r message=FALSE, warning=FALSE}
+toua_chl <- gather(data = toua_ch, key = "element", value = "valeur", 2:9)
+head(toua_chl)
+```
+
+## Première Visualisation : Variation moyenne des mesures entre le aCO2 et le eCO2
+
+Nous avons ici voulu reproduire une visualisation qui avait été faite dans le cas du riz pour montrer la variation de chaque élément quand la plante est en condition de fort CO2 et quand elle est en condition de CO2 ambiant
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(hrbrthemes)
+library(viridis)
+```
+
+```{r}
+ggplot(toua_chl, aes(element, valeur, fill = element))+
+  stat_summary(fun = mean, geom = "bar") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2)+
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed", size = 1) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme_bw()
+```
+
+Observations : 
+
+1) On n'observe pas vraiment de hausse des taux de Carbonne mesurés (contrairement à ce qui a été vu chez le riz par exemple) mais cela s'explique par le fait que la mesure est rapportée au poids de la plante. Ce résultat est donc plutôt normal.
+2) On observe une forte diminution du zinc et du fer, deux éléments essentiels dans l'alimentation, ainsi qu'une grand diminution de l'azote. On observe des diminution moins marquées mais néanmoins notables pour le magnésium et le cuivre. Enfin, on peut voir une augmentation du manganèse assez importante pour être soulignée.
+
+                        
+Nous voudrions avoir une meilleure idée de la distribution des valeurs mesurées pour chaque élement, nous faisons donc un violin plot :
+
+```{r violinchange2, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(toua_chl, aes(x = element, y=valeur, fill = element)) +
+  geom_violin()
+```
+
+
+## Scatter Plot Ratios eCN/aCN
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+toua$aNC_ratio <- toua$N_aCo2/toua$C_aCo2
+toua$eNC_ratio <- toua$N_eCo2/toua$C_eCo2
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data= toua_no_out, aes(x =aCN_ratio, y = eCN_ratio))+
+  geom_point()+
+  geom_abline(a=0, b=1,col="blue")
+
+```
+
+
+### Scatter Plots des éléments e/a
+
+```{r}
+i = 2
+while (i < 17) {
+plot(toua_no_out[,i+1], toua_no_out[,i], xlab = names(toua_no_out[i+1]), ylab = names(toua_no_out[i]),asp=1) 
+abline(0,1, col = "blue")
+i = i + 2}
+```
+
+## Tests de normalité : Test de Shapiro
+
+Dans le but de choisir des tests sur la moyenne et sur la variance adaptés à nos données, nous avons commencé par réaliser un test de normalité, ici le test de Shapiro.
+
+```{r}
+for (i in 2:17) {
+  hist(toua_no_out[,i], xlab = names(toua_no_out[i]), main = paste("Histogram of", names(toua_no_out[i])))
+  #ggplot2(toua_no_out, aes(x=names(toua_no_out[i])) + geom_histogram())
+  print(paste("Test de Shapiro pour la donnée", names(toua_no_out[i])))
+  print(shapiro.test(toua_no_out[,i]))
+}
+
+
+
+
+
+```
+Ici, nous remarquons que les éléments dont la distribution ne suit pas une loi normale après avoir enlevé les outliers sont : Na, Mn et Cu
+
+### Test de significativité sur les moyennes : Wilcoxon
+Ici on a choisi un test de Wilcoxon ( car on ne respecte pas les pré-requis pour un test paramétrique) pour des valeurs paired, car la mesure en Co2 ambiant et élevé sont réalisés sur les mêmes génotypes.
+
+```{r echo = FALSE}
+i = 2
+while (i < 17) {
+  print(paste("Test de Wilcoxon entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
+  print(wilcox.test(toua_no_out[,i+1], toua_no_out[,i], paired = TRUE))
+  i = i + 2
+}
+```
+
+Ce test nous apprend que pour l'instant, tous les éléments sont significativement différents sauf le Na, le Mn et le C.
+
+### Visualisation du résultat du test de Wilcoxon
+
+Vous trouverez ci-dessous des graphes représentant les P-values du test de Wilcoxon en fonction de la condition (élevée ou ambiante) de la plante pour chacun de ses éléments
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+library(ggpubr)
+```
+```{r}
+i=2
+while (i < 17) {
+  plot_paired <- ggpaired(toua_no_out, cond1 = names(toua_no_out[i+1]) , cond2 = names(toua_no_out[i]),
+           line.color = "dark gray", line.size = 0.6, color = "condition",
+           width = 0.7, linetype = "dotted" ,
+           palette = "aas")+
+    stat_compare_means(paired = TRUE)
+  print(plot_paired)
+  i = i+2
+}
+```
+
+### Test de significativité sur les moyennes pour les répartitions normales : Student
+
+```{r echo = FALSE}
+i = 2
+while (i < 17) {
+  print(paste("Test de Student entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
+  print(t.test(toua_no_out[,i+1], toua_no_out[,i], paired = TRUE))
+  i = i + 2
+}
+```
+```{r}
+
+```
+
+### Test de significativité sur les variances pour les répartitions non normales : Fligner_Killeen's
+
+```{r}
+head(toua_no_out)
+```
+
+
+```{r echo = FALSE}
+
+toua_no_out_no_Mg <- subset (toua_no_out, select = -c(Mg_eCo2,Mg_aCo2))
+i = 2
+while (i < 15) {
+  print(paste("Test de Student entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
+  print(fligner.test(toua_no_out_no_Mg[,i+1], toua_no_out_no_Mg[,i], paired = TRUE))
+  i = i + 2
+}
+```

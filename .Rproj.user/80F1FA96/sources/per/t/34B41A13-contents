@@ -1,0 +1,4 @@
+# Data frame à partir d’un fichier csv
+ozone=read.csv2("ozone.csv")
+# vérification
+summary(ozone)

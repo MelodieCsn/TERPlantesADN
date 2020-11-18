@@ -1,0 +1,3 @@
+"0","attach(toua)"
+"0","plot(Fe_aCo2, Fe_eCo2, main=""Scatterplot Fe"","
+"0","   xlab=""Fe_aCo2"", ylab=""Fe_eCo2"", pch=19)"

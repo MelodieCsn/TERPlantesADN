@@ -1,0 +1,184 @@
+---
+title: "Languedoc_Markdown_06_11"
+author: "Mélodie"
+date: "06/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Introduction
+
+La première étape de notre projet de TER consiste à analyser trois jeux de données phénotypiques sur des arabidopsis pour comprendre comment des conditions de fort CO2 impactent la quantité de nutriments qu'elles produisent. Vous trouverez ci-après l'analyse du deuxième dataset dont nous disposons qui s'appelle LANGUEDOC.
+
+## Ouverture du csv
+
+```{r call1, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyr)
+library(dplyr)
+```
+```{r}
+lang <- read.table("LANGUEDOC_phenotypes.csv",sep=";",h=TRUE,na.strings = ".")
+head(lang)
+```
+
+## Suppression des lignes avec des Na
+
+```{r}
+# supression des colonnes inutiles pour l'instant
+
+lang_no_ch <- subset (lang, select = -c(N_change:Zn_change))
+
+lang_clean = lang_no_ch[-c(10,13,109,116,123,131,150,151,179,180,187,189),] 
+print(lang_clean)
+
+```
+## Identification des outliers
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data= lang_clean, aes(x =Fe_aCo2, y = Fe_eCo2))+
+  geom_point()+
+  geom_abline(a=0, b=1,col="blue")
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data= lang_clean, aes(x =Zn_aCo2, y = Zn_eCo2))+
+  geom_point()+
+  geom_abline(a=0, b=1,col="blue")
+```
+
+## Suppression des outliers
+
+```{r}
+lang_no_out <- lang_clean
+k= 3
+for (i in 2:17) {
+  binf <- median(lang_clean[,i]) - k* mad(lang_clean[,i])
+  bsup <- median(lang_clean[,i]) + k* mad(lang_clean[,i])
+  outlier_idx <- which(lang_no_out[,i] < binf | lang_no_out[,i] > bsup)
+    if (length(outlier_idx) == 0) {
+      lang_no_out = lang_no_out
+    }
+    else{
+      lang_no_out = lang_no_out[-c(outlier_idx),]
+      }
+  print(outlier_idx)
+  }
+  
+```
+On passe donc de 200 à 110 plantes, en enlevant les lignes avec des Na et les outliers
+
+## Ajout des colonnes "change"
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+lang_no_out_ch <- lang_no_out
+
+lang_no_out_ch <- mutate(lang_no_out_ch,N_change = round(((lang_no_out$N_eCo2-lang_no_out$N_aCo2)/lang_no_out$N_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Fe_change = round(((lang_no_out$Fe_eCo2-lang_no_out$Fe_aCo2)/lang_no_out$Fe_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Mg_change = round(((lang_no_out$Mg_eCo2-lang_no_out$Mg_aCo2)/lang_no_out$Mg_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Mn_change = round(((lang_no_out$Mn_eCo2-lang_no_out$Mn_aCo2)/lang_no_out$Mn_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Na_change = round(((lang_no_out$Na_eCo2-lang_no_out$Na_aCo2)/lang_no_out$Na_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Zn_change = round(((lang_no_out$Zn_eCo2-lang_no_out$Zn_aCo2)/lang_no_out$Zn_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,C_change = round(((lang_no_out$C_eCo2-lang_no_out$C_aCo2)/lang_no_out$C_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Cu_change = round(((lang_no_out$Cu_eCo2-lang_no_out$Cu_aCo2)/lang_no_out$Cu_aCo2)*100, digits = 2)
+)
+
+head(lang_no_out_ch)
+
+lang_ch <- select(lang_no_out_ch,"genotype"|contains("change"))
+
+lang_chl <- gather(data = lang_ch, key = "element", value = "valeur", 2:9)
+
+head(lang_chl)
+
+```
+## Première Visualisation : Variation moyenne des mesures entre le aCO2 et le eCO2
+
+Nous avons ici voulu reproduire une visualisation qui avait été faite dans le cas du riz pour montrer la variation de chaque élément quand la plante est en condition de fort CO2 et quand elle est en condition de CO2 ambiant
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(hrbrthemes)
+library(viridis)
+```
+
+```{r}
+ggplot(lang_chl, aes(element, valeur, fill = element))+
+  stat_summary(fun = mean, geom = "bar") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2)+
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed", size = 1) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme_bw()
+```
+
+## Scatter plots sans outliers
+
+```{r}
+i = 2
+while (i < 17) {
+  print(
+    ggplot(data= lang_no_out, aes(x =lang_no_out[,i+1], y = lang_no_out[,i]))+
+    geom_point()+
+    xlab(colnames(lang)[i+1]) + ylab(colnames(lang)[i])+
+    geom_abline(slope = 1, intercept = 1,col="blue")
+  )
+  
+i = i + 2}
+```
+
+```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+library(reshape2)
+library(ggplot2)
+
+lang_long = melt(lang_no_out)
+print(head(lang_long))
+
+ggplot(data= lang_long, aes(x=variable, y=value))+
+  geom_violin(aes(fill=variable))+
+  geom_jitter(alpha=0.2)+
+  facet_wrap(~variable,scales ="free")+
+  ggtitle("Violin plots de chaque élément")
+```
+
+```{r fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(RColorBrewer)
+library(ggpubr)
+
+lang_long = melt(lang_no_out)
+lang_long$element = stringr::str_split_fixed(lang_long$variable, "_",2)[,1]
+lang_long$Co2 = stringr::str_split_fixed(lang_long$variable, "_",2)[,2]
+
+nb.cols <- 16
+mycolors <- colorRampPalette(brewer.pal(8, "Paired"))(nb.cols)
+
+ggplot(data = lang_long, aes(x = Co2, y = value)) +
+  geom_violin(aes(fill = variable), draw_quantiles = c(0.5)) +
+  facet_wrap( ~ element, scales = "free") +
+  scale_fill_manual(values = mycolors) +
+  stat_compare_means(paired = TRUE, method = "wilcox")
+  
+```
+
+

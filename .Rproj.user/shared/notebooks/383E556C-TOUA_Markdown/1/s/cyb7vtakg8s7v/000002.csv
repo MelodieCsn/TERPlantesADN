@@ -1,0 +1,4 @@
+"0","toua$C_change <- round(((toua$C_eCo2-toua$C_aCo2)/toua$C_aCo2)*100, digits = 2)"
+"2","Error in `$<-.data.frame`(`*tmp*`, C_change, value = numeric(0)) : 
+  replacement has 0 rows, data has 192
+"

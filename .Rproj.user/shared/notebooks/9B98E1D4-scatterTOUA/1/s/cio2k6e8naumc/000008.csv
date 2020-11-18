@@ -1,0 +1,3 @@
+"0","attach(toua)"
+"0","plot(N_aCo2, N_eCo2, main=""Scatterplot N"","
+"0","   xlab=""N_aCo2"", ylab=""N_eCo2"", pch=19)"

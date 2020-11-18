@@ -1,0 +1,3 @@
+"0","attach(toua)"
+"0","plot(C_aCo2, C_eCo2, main=""Scatterplot Carbonne"","
+"0","   xlab=""C_aCo2"", ylab=""C_eCo2"", pch=19) "

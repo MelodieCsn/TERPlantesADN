@@ -1,0 +1,3 @@
+"0","attach(toua)"
+"0","plot(Zn_aCo2, Zn_eCo2, main=""Scatterplot Zinc"","
+"0","   xlab=""Zn_aCo2"", ylab=""Zn_eCo2"", pch=19) "

@@ -1,0 +1,122 @@
+---
+title: "ScatterTOUA"
+author: "Mélodie"
+date: "14/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scatterplots représentants l'évolution de la quantité de chacun des 8 éléments avec une contrainte de fort co2 ou de co2 ambiant 
+
+Appel des librairies et affichage du csv : 
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyr)
+library(dplyr)
+```
+```{r message=FALSE, warning=FALSE}
+toua <- read.csv2("TOUA_phenotypes.csv")
+head(toua)
+``` 
+
+
+```{r message=FALSE, warning=FALSE}
+#toua_ch <- gather(data = toua, key = "element", value = "valeur", 2:8)
+#head(toua_ch)
+```
+
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(C_aCo2, C_eCo2, main="Scatterplot Carbonne",
+   xlab="C_aCo2", ylab="C_eCo2", pch=19) 
+abline(lm(C_aCo2~C_eCo2), col="red") # regression line (y~x)
+abline(0,1, col = "blue")
+
+```
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(Zn_aCo2, Zn_eCo2, main="Scatterplot Zinc",
+   xlab="Zn_aCo2", ylab="Zn_eCo2", pch=19) 
+abline(lm(Zn_aCo2~Zn_eCo2), col="red") # regression line (y~x)
+abline(0,1, col = "blue")
+
+```
+On va enlever un outlier pour mieux voir la répartition :
+```{r message=FALSE, warning=FALSE}
+df = toua[-c(61),]
+attach(df)
+plot(Zn_aCo2, Zn_eCo2, main="Scatterplot Zinc",
+   xlab="Zn_aCo2", ylab="Zn_eCo2", pch=19) 
+abline(lm(Zn_aCo2~Zn_eCo2), col="red") # regression line (y~x)
+abline(0,1, col = "blue")
+```
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(Na_aCo2, Na_eCo2, main="Scatterplot Na",
+   xlab="Na_aCo2", ylab="Na_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Na_aCo2~Na_eCo2), col="red") # regression line (y~x)
+```
+```{r}
+
+```
+
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(N_aCo2, N_eCo2, main="Scatterplot N",
+   xlab="N_aCo2", ylab="N_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(N_aCo2~N_eCo2), col="red") # regression line (y~x)
+```
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(Cu_aCo2, Cu_eCo2, main="Scatterplot Cu",
+   xlab="Cu_aCo2", ylab="Cu_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Cu_aCo2~Cu_eCo2), col="red") # regression line (y~x)
+```
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(Fe_aCo2, Fe_eCo2, main="Scatterplot Fe",
+   xlab="Fe_aCo2", ylab="Fe_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Fe_aCo2~Fe_eCo2), col="red") # regression line (y~x)
+```
+Il semblerait qu'un outlier nous empèche de visualiser correctement. Nous allons l'identifier et l'enlever : 
+```{r message=FALSE, warning=FALSE}
+df = toua[-c(61),]
+attach(df)
+plot(Fe_aCo2, Fe_eCo2, main="Scatterplot Fe",
+   xlab="Fe_aCo2", ylab="Fe_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Fe_aCo2~Fe_eCo2), col="red")
+```
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(Mg_aCo2, Mg_eCo2, main="Scatterplot Mg",
+   xlab="Mg_aCo2", ylab="Mg_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Mg_aCo2~Mg_eCo2), col="red") # regression line (y~x)
+```
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(Mn_aCo2, Mn_eCo2, main="Scatterplot Mn",
+   xlab="Mn_aCo2", ylab="Mn_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Mn_aCo2~Mn_eCo2), col="red") # regression line (y~x)
+```
+Il semblerait ici que les plantes en condition de fort Co2 ont moins de Mn
+```{r message=FALSE, warning=FALSE}
+attach(toua)
+plot(Cu_aCo2, Cu_eCo2, main="Scatterplot Cu",
+   xlab="Cu_aCo2", ylab="Cu_eCo2", pch=19)
+abline(0,1, col = "blue")
+abline(lm(Cu_aCo2~Cu_eCo2), col="red") # regression line (y~x)
+```
+Il semblerait que les arabidopsis en condition de fort co2 
+
+

@@ -1,0 +1,10 @@
+"0","ggplot(toua_chl, aes(element, valeur, fill = element))+"
+"0","  stat_summary(fun = mean, geom = ""bar"") +"
+"0","  stat_summary(fun.data = mean_se, geom = ""errorbar"", width = 0.2)+"
+"0","  geom_hline(yintercept = 0, color = ""red"", linetype = ""dashed"", size = 1) +"
+"0","  scale_fill_viridis_d() +"
+"0","  scale_color_viridis_d() +"
+"0","  theme_bw()"
+"2","Error in ggplot(toua_chl, aes(element, valeur, fill = element)) : 
+  objet 'toua_chl' introuvable
+"

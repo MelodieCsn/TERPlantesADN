@@ -1,0 +1,2 @@
+"0","#toua_ch <- gather(data = toua, key = ""element"", value = ""valeur"", 2:8)"
+"0","#head(toua_ch)"

@@ -1,0 +1,3 @@
+"0","attach(toua)"
+"0","plot(Cu_aCo2, Cu_eCo2, main=""Scatterplot Cu"","
+"0","   xlab=""Cu_aCo2"", ylab=""Cu_eCo2"", pch=19)"

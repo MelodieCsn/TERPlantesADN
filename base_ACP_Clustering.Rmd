@@ -1,0 +1,247 @@
+---
+title: "Base_ACP_Clustering"
+author: "Mélodie"
+date: "10/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ajout de toutes les populations et suppression de leurs outliers
+
+### TOUA
+
+```{r call1, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyr)
+library(dplyr)
+```
+```{r}
+toua <- read.csv2("TOUA_phenotypes.csv")
+head(toua)
+
+toua$C_change <- round(((toua$C_eCo2-toua$C_aCo2)/toua$C_aCo2)*100, digits = 2)
+toua$Cu_change <- round(((toua$Cu_eCo2-toua$Cu_aCo2)/toua$Cu_aCo2)*100, digits = 2)
+
+```
+
+
+Suppression des outliers
+
+```{r}
+toua_no_out <- toua
+k= 3
+for (i in 2:17) {
+  binf <- median(toua[,i]) - k* mad(toua[,i])
+  bsup <- median(toua[,i]) + k* mad(toua[,i])
+  outlier_idx <- which(toua_no_out[,i] < binf | toua_no_out[,i] > bsup)
+    if (length(outlier_idx) == 0) {
+      toua_no_out = toua_no_out
+    }
+    else{
+      toua_no_out = toua_no_out[-c(outlier_idx),]
+      }
+  print(outlier_idx)
+  }
+  
+```
+
+Modification des colonnes de changement sans les outliers
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+
+# Suppression des anciennes colonnes
+toua_no_out_no_ch <- subset (toua_no_out, select = -c(Fe_change:Cu_change))
+toua_no_out <- subset(toua_no_out_no_ch, select = -c(N_change))
+
+# Ajout des nouvelles colonnes
+
+
+toua_no_out$N_change <- round(((toua_no_out$N_eCo2-toua_no_out$N_aCo2)/toua_no_out$N_aCo2)*100, digits = 2)
+
+toua_no_out$Fe_change <- round(((toua_no_out$Fe_eCo2-toua_no_out$Fe_aCo2)/toua_no_out$Fe_aCo2)*100, digits = 2)
+
+toua_no_out$Mg_change <- round(((toua_no_out$Mg_eCo2-toua_no_out$Mg_aCo2)/toua_no_out$Mg_aCo2)*100, digits = 2)
+
+toua_no_out$Mn_change <- round(((toua_no_out$Mn_eCo2-toua_no_out$Mn_aCo2)/toua_no_out$Mn_aCo2)*100, digits = 2)
+
+toua_no_out$Na_change <- round(((toua_no_out$Na_eCo2-toua_no_out$Na_aCo2)/toua_no_out$Na_aCo2)*100, digits = 2)
+
+toua_no_out$Zn_change <- round(((toua_no_out$Zn_eCo2-toua_no_out$Zn_aCo2)/toua_no_out$Zn_aCo2)*100, digits = 2)
+
+toua_no_out$C_change <- round(((toua_no_out$C_eCo2-toua_no_out$C_aCo2)/toua_no_out$C_aCo2)*100, digits = 2)
+
+toua_no_out$Cu_change <- round(((toua_no_out$Cu_eCo2-toua_no_out$Cu_aCo2)/toua_no_out$Cu_aCo2)*100, digits = 2)
+
+head(toua_no_out)
+
+toua_ch <- select(toua_no_out,"genotype"|contains("change"))
+
+```
+
+Donc pour utiliser toua on appelle toua_no_out
+
+## LANGUEDOC
+
+```{r}
+lang <- read.table("LANGUEDOC_phenotypes.csv",sep=";",h=TRUE,na.strings = ".")
+head(lang)
+```
+
+Suppression des lignes avec des Na
+
+```{r}
+# supression des colonnes inutiles pour l'instant
+
+lang_no_ch <- subset (lang, select = -c(N_change:Zn_change))
+
+lang_clean = lang_no_ch[-c(10,13,109,116,123,131,150,151,179,180,187,189),] 
+print(lang_clean)
+
+```
+
+Suppression des outliers
+
+```{r}
+lang_no_out <- lang_clean
+k= 3
+for (i in 2:17) {
+  binf <- median(lang_clean[,i]) - k* mad(lang_clean[,i])
+  bsup <- median(lang_clean[,i]) + k* mad(lang_clean[,i])
+  outlier_idx <- which(lang_no_out[,i] < binf | lang_no_out[,i] > bsup)
+    if (length(outlier_idx) == 0) {
+      lang_no_out = lang_no_out
+    }
+    else{
+      lang_no_out = lang_no_out[-c(outlier_idx),]
+      }
+  print(outlier_idx)
+  }
+  
+```
+
+Ajout des colonnes "change"
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+lang_no_out_ch <- lang_no_out
+
+lang_no_out_ch <- mutate(lang_no_out_ch,N_change = round(((lang_no_out$N_eCo2-lang_no_out$N_aCo2)/lang_no_out$N_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Fe_change = round(((lang_no_out$Fe_eCo2-lang_no_out$Fe_aCo2)/lang_no_out$Fe_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Mg_change = round(((lang_no_out$Mg_eCo2-lang_no_out$Mg_aCo2)/lang_no_out$Mg_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Mn_change = round(((lang_no_out$Mn_eCo2-lang_no_out$Mn_aCo2)/lang_no_out$Mn_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Na_change = round(((lang_no_out$Na_eCo2-lang_no_out$Na_aCo2)/lang_no_out$Na_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Zn_change = round(((lang_no_out$Zn_eCo2-lang_no_out$Zn_aCo2)/lang_no_out$Zn_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,C_change = round(((lang_no_out$C_eCo2-lang_no_out$C_aCo2)/lang_no_out$C_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Cu_change = round(((lang_no_out$Cu_eCo2-lang_no_out$Cu_aCo2)/lang_no_out$Cu_aCo2)*100, digits = 2)
+)
+
+head(lang_no_out_ch)
+
+lang_ch <- select(lang_no_out_ch,"genotype"|contains("change"))
+
+lang_chl <- gather(data = lang_ch, key = "element", value = "valeur", 2:9)
+
+head(lang_chl)
+
+```
+
+Donc pour utiliser languedoc on appelle lang_no_out_ch
+
+## REGMAP
+
+```{r}
+reg <- read.table("REGMAP_phenotypes.csv",sep=";",h=TRUE,na.strings = ".")
+head(reg)
+```
+
+Suppression des lignes avec des Na
+
+```{r}
+# supression des colonnes inutiles pour l'instant
+
+reg_no_ch <- subset (reg, select = -c(N_change:Zn_change))
+
+reg_clean = reg_no_ch[-c(17,42),] 
+print(reg_clean)
+
+```
+
+Supression des outliers
+
+```{r}
+reg_no_out <- reg_clean
+k= 3
+for (i in 2:17) {
+  binf <- median(reg_clean[,i]) - k* mad(reg_clean[,i])
+  bsup <- median(reg_clean[,i]) + k* mad(reg_clean[,i])
+  outlier_idx <- which(reg_no_out[,i] < binf | reg_no_out[,i] > bsup)
+    if (length(outlier_idx) == 0) {
+      reg_no_out = reg_no_out
+    }
+    else{
+      reg_no_out = reg_no_out[-c(outlier_idx),]
+      }
+  print(outlier_idx)
+  }
+  
+```
+
+Ajout des colonnes "change"
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+reg_no_out_ch <- reg_no_out
+
+reg_no_out_ch <- mutate(reg_no_out_ch,N_change = round(((reg_no_out$N_eCo2-reg_no_out$N_aCo2)/reg_no_out$N_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Fe_change = round(((reg_no_out$Fe_eCo2-reg_no_out$Fe_aCo2)/reg_no_out$Fe_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Mg_change = round(((reg_no_out$Mg_eCo2-reg_no_out$Mg_aCo2)/reg_no_out$Mg_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Mn_change = round(((reg_no_out$Mn_eCo2-reg_no_out$Mn_aCo2)/reg_no_out$Mn_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Na_change = round(((reg_no_out$Na_eCo2-reg_no_out$Na_aCo2)/reg_no_out$Na_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Zn_change = round(((reg_no_out$Zn_eCo2-reg_no_out$Zn_aCo2)/reg_no_out$Zn_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,C_change = round(((reg_no_out$C_eCo2-reg_no_out$C_aCo2)/reg_no_out$C_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Cu_change = round(((reg_no_out$Cu_eCo2-reg_no_out$Cu_aCo2)/reg_no_out$Cu_aCo2)*100, digits = 2)
+)
+
+head(reg_no_out_ch)
+
+reg_ch <- select(reg_no_out_ch,"genotype"|contains("change"))
+
+reg_chl <- gather(data = reg_ch, key = "element", value = "valeur", 2:9)
+
+head(reg_chl)
+
+```
+
+Donc pour utiliser REGMAP on appelle reg_no_out_ch

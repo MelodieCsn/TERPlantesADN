@@ -1,0 +1,3 @@
+"0","attach(toua)"
+"0","plot(Mg_aCo2, Mg_eCo2, main=""Scatterplot Mg"","
+"0","   xlab=""Mg_aCo2"", ylab=""Mg_eCo2"", pch=19)"
