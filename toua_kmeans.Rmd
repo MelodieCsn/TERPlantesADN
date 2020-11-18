@@ -1,0 +1,145 @@
+---
+title: "TOUA_Clustering"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(dplyr)
+library(factoextra)
+library(cluster)
+```
+
+
+## Gestion des outliers
+
+Dans un premier temps, nous avion eliminé les outliers en les definissant comme les points à plus de 3 ecarts type de le moyenne. Le probleme de cette approche est qu'elle est tres sensible aux valeurs extremes. En effet une valeur extreme aura un impact fort sur l'ecart type. 
+Une facon plus robuste d'exclure les outliers serait d'eliminer ceux à 3 mad de la mediane. 
+```{r cars}
+toua <- read.csv2("TOUA_phenotypes.csv")
+toua_med_out <- toua
+k= 3
+for (i in 2:17) {
+  binf <- median(toua[,i]) - k* mad(toua[,i])
+  bsup <- median(toua[,i]) + k* mad(toua[,i])
+  outlier_idx <- which(toua_med_out[,i] < binf | toua_med_out[,i] > bsup)
+    if (length(outlier_idx) == 0) {
+      toua_med_out = toua_med_out
+    }
+    else{
+      toua_med_out = toua_med_out[-c(outlier_idx),]
+      }
+  print(outlier_idx)
+  }
+```
+
+
+
+Dans le cas précedents nous avons choisi de supprimer l'integralité des mesures d'une plantes dès qu'une des mesures effectuées sur la plant était considere comme un outlier. Cette methode a l'avantage de ne pas génerer de NA, ce qui est un avantage pour certaines analyse ulterieures comme l'ACP. 
+Par contre c'est particulierement stringean et non necessaire pour une simple visualisation. 
+
+```{r pressure}
+toua_med_out_NA <- toua[1:17]
+for (i in 2:17) {
+  binf <- median(toua[,i]) - k* mad(toua[,i])
+  bsup <- median(toua[,i]) + k* mad(toua[,i])
+  outlier_idx <- which(toua_med_out_NA[,i] < binf | toua_med_out_NA[,i] > bsup)
+    if (length(outlier_idx) == 0) {
+      toua_med_out_NA = toua_med_out_NA
+    }
+    else{
+      toua_med_out_NA[c(outlier_idx),i] ="NA"
+      }
+      }
+```
+
+
+
+
+### Clustering
+## k means
+
+```{r}
+library(VIM)
+```
+
+```{r}
+aggr(toua_med_out)
+```
+
+```{r}
+i = 2
+while (i < 17) {
+plot(toua_med_out[,i+1], toua_med_out[,i], xlab = names(toua_med_out[i+1]), ylab = names(toua_med_out[i])) 
+abline(0,1, col = "blue")
+i = i + 2}
+```
+
+On va selectionner uniquement les colonnes pourcentages. Avantage pas besoin de scale les données, les valeurs sont du même ordre de grandeur et le focus est mis sur le changement lors de l augmentation du CO2
+
+```{r}
+toua_ch_out <- select(toua_med_out,"genotype"|contains("change"))
+```
+
+```{r}
+
+fviz_nbclust(toua_ch_out[,2:9], FUNcluster = kmeans, method = "wss")
+
+```
+
+```{r}
+lis = c(1,10,25,50)
+for (i in lis)  {
+  clusters <- kmeans(toua_ch_out[,2:9],centers = 2, nstart = i )
+  graph <- fviz_cluster(clusters, data = toua_ch_out[,2:9], 
+             ellipse.type = "convex",
+             palette = "jco",
+             repel = TRUE,
+             ggtheme = theme_minimal())
+  print(graph)
+}
+
+
+
+```
+
+```{r}
+cluster <- kmeans(toua_ch_out[,2:9],centers = 6, nstart = 25 )
+graph <- fviz_cluster(cluster, data = toua_ch_out[,2:9], 
+             ellipse.type = "convex",
+             palette = "jco",
+             repel = TRUE,
+             ggtheme = theme_minimal())
+print(graph)
+  
+
+```
+```{r}
+cluster_pam <- pam(toua_ch_out[,2:9], k = 2)
+fviz_cluster(cluster_pam, data = toua_ch_out[,2:9], 
+             ellipse.type = "convex",
+             palette = "jco",
+             repel = TRUE,
+             ggtheme = theme_minimal())
+```
+```{r}
+print(clusters)
+```
+On a fait le k-means sur l'ensemble des pourcentage. On peut aussi le faire sur les pourcentages 1 par 1. Et sur le ration C/N
+
+```{r}
+for (i in 2:9)  {
+  cluster_c <- kmeans(toua_ch_out[,i],centers = 2, nstart = 25 )
+  graph <- fviz_cluster(cluster_c, data = toua_ch_out[,i], 
+             ellipse.type = "convex",
+             palette = "jco",
+             repel = TRUE,
+             ggtheme = theme_minimal())
+  print(graph)
+  }
+```
+
