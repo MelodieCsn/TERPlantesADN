@@ -14,7 +14,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 La première étape de notre projet de TER consiste à analyser trois jeux de données phénotypiques sur des arabidopsis pour comprendre comment des conditions de fort CO2 impactent la quantité de nutriments qu'elles produisent. Vous trouverez ci-après l'analyse du deuxième dataset dont nous disposons qui s'appelle LANGUEDOC.
 
-## Ouverture du csv
+## Données brutes 
+
+Voici les données fournies par nos commanditaires. Nous allons pouvoir leur appliquer plusieurs traitement afin de nous familiariser avec et de visualiser les dynamiques entre les différentes variables observées.
 
 ```{r call1, message=FALSE, warning=FALSE, echo=FALSE}
 library(tidyr)
@@ -25,35 +27,40 @@ lang <- read.table("LANGUEDOC_phenotypes.csv",sep=";",h=TRUE,na.strings = ".")
 head(lang)
 ```
 
-## Suppression des lignes avec des Na
+### Suppression des lignes avec des Na
+
+Dans ce dataset nous avions des lignes pour lesquelles il manquait une observation, nous les avons donc supprimées.
 
 ```{r}
 # supression des colonnes inutiles pour l'instant
 
 lang_no_ch <- subset (lang, select = -c(N_change:Zn_change))
-
 lang_clean = lang_no_ch[-c(10,13,109,116,123,131,150,151,179,180,187,189),] 
-print(lang_clean)
+head(lang_clean)
 
 ```
 ## Identification des outliers
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.width=4}
 library(ggplot2)
 ggplot(data= lang_clean, aes(x =Fe_aCo2, y = Fe_eCo2))+
   geom_point()+
   geom_abline(a=0, b=1,col="blue")
 ```
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.width=4}
 library(ggplot2)
 ggplot(data= lang_clean, aes(x =Zn_aCo2, y = Zn_eCo2))+
   geom_point()+
   geom_abline(a=0, b=1,col="blue")
 ```
 
+Comme le montrent ces deux Scatter plots,certaines valeurs pour certains éléments sont très singulières, et après discussion avec nos encadrants nous en avons conclu qu'il s'agit d'erreurs de mesures qui ne peuvent pas exister en réalité. Nous allons donc les supprimer.
+
 ## Suppression des outliers
 
-```{r}
+Nous allons maintenant supprimer les outliers en choisissant d'enlever les lignes contenant des valeurs plus de trois fois plus grandes que la médiane. Nous avons choisi la médiane et non l'écart type car les valeurs des outliers ont moins d'influence sur elle.
+
+```{r message=FALSE, warning=FALSE}
 lang_no_out <- lang_clean
 k= 3
 for (i in 2:17) {
@@ -70,11 +77,14 @@ for (i in 2:17) {
   }
   
 ```
+
 On passe donc de 200 à 110 plantes, en enlevant les lignes avec des Na et les outliers
 
-## Ajout des colonnes "change"
+### Calcul des colonnes de variation sans les outliers
 
-```{r message=FALSE, warning=FALSE}
+Comme nous avons supprimé les lignes contenant des outliers, ils nous faut recalculer les colonnes de variation pour chaque élément, ce qui nous donne ce nouveau DataFrame : 
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
 library(tidyverse)
 
 lang_no_out_ch <- lang_no_out
@@ -103,13 +113,14 @@ lang_no_out_ch <- mutate(lang_no_out_ch,C_change = round(((lang_no_out$C_eCo2-la
 lang_no_out_ch <- mutate(lang_no_out_ch,Cu_change = round(((lang_no_out$Cu_eCo2-lang_no_out$Cu_aCo2)/lang_no_out$Cu_aCo2)*100, digits = 2)
 )
 
-head(lang_no_out_ch)
-
 lang_ch <- select(lang_no_out_ch,"genotype"|contains("change"))
 
 lang_chl <- gather(data = lang_ch, key = "element", value = "valeur", 2:9)
 
-head(lang_chl)
+
+head(lang_no_out_ch)
+
+
 
 ```
 ## Première Visualisation : Variation moyenne des mesures entre le aCO2 et le eCO2
@@ -132,9 +143,17 @@ ggplot(lang_chl, aes(element, valeur, fill = element))+
   theme_bw()
 ```
 
-## Scatter plots sans outliers
+Observations : 
 
-```{r}
+1) On n'observe pas vraiment de hausse des taux de Carbonne mesurés (contrairement à ce qui a été vu chez le riz par exemple) mais cela s'explique par le fait que la mesure est rapportée au poids de la plante. Ce résultat est donc plutôt normal.
+2) On observe une baisse de Magnésium et une légère baisse d'azote, ainsi qu'une grande augmentation de Manganèse, de Sodium et de Cuivre.
+
+## Scatter plots
+
+Afin de visualiser d'une autre façon si il y a une perte de certains éléments quand la plante est en condition de fort CO2, nous avons créé des scatter plots.
+
+
+```{r fig.height=4, fig.width=4}
 i = 2
 while (i < 17) {
   print(
@@ -147,26 +166,66 @@ while (i < 17) {
 i = i + 2}
 ```
 
-```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+## Distribution des données : Histogrammes et Violin plots
+
+### Violin plots
+
+```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE, echo = FALSE}
 library(reshape2)
 library(ggplot2)
+library(dplyr)
 
-lang_long = melt(lang_no_out)
-print(head(lang_long))
+lang_no_out_no_ch = lang_no_out
+lang_long = melt(lang_no_out_no_ch)
 
 ggplot(data= lang_long, aes(x=variable, y=value))+
   geom_violin(aes(fill=variable))+
   geom_jitter(alpha=0.2)+
   facet_wrap(~variable,scales ="free")+
   ggtitle("Violin plots de chaque élément")
+ 
 ```
+
+### Histogrammes
+
+```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE, echo=FALSE}
+
+#print(shapiro.test(lang_no_out[,i]))
+
+ggplot(data= lang_long, aes(x=value))+
+  geom_histogram()+
+  facet_wrap(~variable,scales ="free")+
+  ggtitle("histogramme de chaque élément")
+
+```
+
+Après ces deux visualisations nous pouvons remarquer que les distributions ont l'air pour la plupart normales mais que des doutes quand à leur normalité persistent.
+
+## Tests de normalité : Test de Shapiro
+
+Dans le but de choisir des tests sur la moyenne et sur la variance adaptés à nos données, nous avons commencé par réaliser un test de normalité, ici le test de Shapiro.
+
+Voici les p-values pour la distribution de chaque élément : 
+
+```{r echo = FALSE}
+i = 2
+while (i < 17) {
+  print(paste("Test de Shapiro entre les données", names(lang_no_out[i]), "et", names(lang_no_out[i+1])))
+  print(shapiro.test(lang_no_out[,i])$p.value)
+  i = i + 2
+}
+```
+Ici, nous remarquons que les éléments dont la distribution ne suit pas une loi normale après avoir enlevé les outliers sont : Cu, Fe et C
+
+### Test de significativité sur les moyennes : Wilcoxon
+Ici on a choisi un test de Wilcoxon (car on ne respecte pas les pré-requis pour un test paramétrique pour toutes nos variables) pour des valeurs paired, car la mesure en Co2 ambiant et élevé sont réalisées sur les mêmes génotypes. Vous trouverez ci dessous des violin plots deux à deux et la p-value de chaque paire avec le test de Wilcoxon.
 
 ```{r fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
 library(ggplot2)
 library(RColorBrewer)
 library(ggpubr)
 
-lang_long = melt(lang_no_out)
+lang_long = melt(lang_no_out_no_ch)
 lang_long$element = stringr::str_split_fixed(lang_long$variable, "_",2)[,1]
 lang_long$Co2 = stringr::str_split_fixed(lang_long$variable, "_",2)[,2]
 
@@ -178,7 +237,45 @@ ggplot(data = lang_long, aes(x = Co2, y = value)) +
   facet_wrap( ~ element, scales = "free") +
   scale_fill_manual(values = mycolors) +
   stat_compare_means(paired = TRUE, method = "wilcox")
-  
 ```
 
+### Autre visualisation du résultat du test de Wilcoxon
 
+```{r fig.height=4, fig.width=4,}
+i=2
+while (i < 17) {
+  plot_paired <- ggpaired(lang_no_out, cond1 = names(lang_no_out[i+1]) , cond2 = names(lang_no_out[i]),
+           line.color = "dark gray", line.size = 0.6, color = "condition",
+           width = 0.7, linetype = "dotted" ,
+           palette = "aas")+
+    stat_compare_means(paired = TRUE)
+  print(plot_paired)
+  i = i+2
+}
+```
+
+### Test de significativité sur les moyennes pour les répartitions normales : Student
+
+```{r echo = FALSE}
+i = 2
+while (i < 17) {
+  print(paste("Test de Student entre les données", names(lang_no_out[i]), "et", names(lang_no_out[i+1])))
+  print(paste("p-value = ",t.test(lang_no_out[,i+1], lang_no_out[,i], paired = TRUE)$p.value))
+  i = i + 2
+}
+```
+
+### Test de significativité sur les variances pour les répartitions non normales : Fligner_Killeen's
+
+```{r echo = FALSE}
+
+#lang_no_out_no_Mg <- subset (lang_no_out, select = -c(Mg_eCo2,Mg_aCo2))
+#i = 2
+#while (i < 15) {
+  #print(paste("Test de Fligner-Kileen's entre les données", names(lang_no_out[i]), "et", names(lang_no_out[i+1])))
+  #print(paste("p-value = ",fligner.test(lang_no_out_no_Mg[,i+1], lang_no_out_no_Mg[,i], paired = TRUE)$p.value))
+  #i = i + 2
+#}
+```
+
+Ce test  nous renvoie que les données sont essentiellement constantes
