@@ -198,6 +198,17 @@ ggplot(data= reg_long, aes(x=value))+
   ggtitle("histogramme de chaque élément")
 
 ```
+```{r}
+i = 2
+while (i < 18) {
+  ggplot(data= reg_no_out_no_ch, aes(sample=reg_no_out_no_ch[,i]))+
+    stat_qq()+
+    facet_wrap(~reg_no_out_no_ch[,i],scales ="free")+
+    ggtitle("qqplot de chaque élément")
+  i=i+1
+}
+```
+
 
 Après ces deux visualisations nous pouvons remarquer que les distributions ont l'air pour la plupart normales mais que des doutes quand à leur normalité persistent.
 
@@ -209,13 +220,13 @@ Voici les p-values pour la distribution de chaque élément :
 
 ```{r echo = FALSE}
 i = 2
-while (i < 17) {
-  print(paste("Test de Shapiro entre les données", names(reg_no_out[i]), "et", names(reg_no_out[i+1])))
+while (i < 18) {
+  print(paste("Test de Shapiro entre les données", names(reg_no_out[i])))
   print(shapiro.test(reg_no_out[,i])$p.value)
-  i = i + 2
+  i = i + 1
 }
 ```
-Ici, nous remarquons que les éléments dont la distribution ne suit pas une loi normale après avoir enlevé les outliers sont : C, Zn, Na, Mg et Cu
+Ici, nous remarquons que les éléments dont la distribution suit une loi normale après avoir enlevé les outliers sont : C, Zn_e, Na_e, Mg et Cu, Mn, N_a,
 
 ### Test de significativité sur les moyennes : Wilcoxon
 Ici on a choisi un test de Wilcoxon (car on ne respecte pas les pré-requis pour un test paramétrique pour toutes nos variables) pour des valeurs paired, car la mesure en Co2 ambiant et élevé sont réalisées sur les mêmes génotypes. Vous trouverez ci dessous des violin plots deux à deux et la p-value de chaque paire avec le test de Wilcoxon.
@@ -233,7 +244,7 @@ nb.cols <- 16
 mycolors <- colorRampPalette(brewer.pal(8, "Paired"))(nb.cols)
 
 ggplot(data = reg_long, aes(x = Co2, y = value)) +
-  geom_violin(aes(fill = variable), draw_quantiles = c(0.5)) +
+  geom_violin(aes(fill = variable), draw_quantiles = c(0.25,0.5,0.75)) +
   facet_wrap( ~ element, scales = "free") +
   scale_fill_manual(values = mycolors) +
   stat_compare_means(paired = TRUE, method = "wilcox")
@@ -254,28 +265,56 @@ while (i < 17) {
 }
 ```
 
+On peut constater en regardant les graphes et le p-values du test de Wilcoxon que les éléments Cu,Fe,Mg,Mn,Na,Zn,C et N ont des moyennent significativement différentes entre CO2 ambiant et élevé, soit tous les éléments.
+
 ### Test de significativité sur les moyennes pour les répartitions normales : Student
 
 ```{r echo = FALSE}
-i = 2
-while (i < 17) {
-  print(paste("Test de Student entre les données", names(reg_no_out[i]), "et", names(reg_no_out[i+1])))
-  print(paste("p-value = ",t.test(reg_no_out[,i+1], reg_no_out[,i], paired = TRUE)$p.value))
-  i = i + 2
-}
+
+  print("Test de Student entre les données Mg_aCo2 et Mg_eCo2")
+  print(paste("p-value = ",t.test(reg_no_out$Mg_aCo2, reg_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données Mn_aCo2 et Mn_eCo2")
+  print(paste("p-value = ",t.test(reg_no_out$Mn_aCo2, reg_no_out$Mn_eCo2, paired = TRUE)$p.value))
+   
+  print("Test de Student entre les données Cu_aCo2 et Cu_eCo2")
+  print(paste("p-value = ",t.test(reg_no_out$Cu_aCo2, reg_no_out$Cu_eCo2, paired = TRUE)$p.value))
+  
 ```
 
-### Test de significativité sur les variances pour les répartitions non normales : Fligner_Killeen's
+Ici, on observe que tous les éléments de distribution normales ont une moyenne significativement différente.
+Nous sommes donc encore plus assurés que les moyennes sont significativement différentes, même pour les éléements aux distributions normales.
+
+
+### Test de significativité sur les variances pour les répartitions non normales : Levene
+
 
 ```{r echo = FALSE}
+library(lawstat)
+i = 2
+while (i < 17) {
+  print(paste("Test de Levene entre les données", names(reg_no_out[i]), "et", names(reg_no_out[i+1])))
+  a = reg_no_out[,i+1]
+  e = reg_no_out[,i]
+  values = c(a,e)
+  factor = c(rep('aCo2',length(a)), rep('eCo2',length(e)))
+  print(paste("p-value = ",levene.test(values, factor)$p.value))
+  i = i + 2
+}
 
-#reg_no_out_no_Mg <- subset (reg_no_out, select = -c(Mg_eCo2,Mg_aCo2))
-#i = 2
-#while (i < 15) {
-  #print(paste("Test de Fligner-Kileen's entre les données", names(reg_no_out[i]), "et", names(reg_no_out[i+1])))
-  #print(paste("p-value = ",fligner.test(reg_no_out_no_Mg[,i+1], reg_no_out_no_Mg[,i], paired = TRUE)$p.value))
-  #i = i + 2
-#}
+```
+### Test de significativité sur les variances pour les répartitions normales : Fisher
+```{r echo = FALSE}
+
+  print("Test de Fisher entre les données Mg_aCo2 et Mg_eCo2")
+  print(paste("p-value = ",var.test(reg_no_out$Mg_aCo2, reg_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données Mn_aCo2 et Mn_eCo2")
+  print(paste("p-value = ",var.test(reg_no_out$Mn_aCo2, reg_no_out$Mn_eCo2, paired = TRUE)$p.value))
+   
+  print("Test de Fisher entre les données Cu_aCo2 et Cu_eCo2")
+  print(paste("p-value = ",var.test(reg_no_out$Cu_aCo2, reg_no_out$Cu_eCo2, paired = TRUE)$p.value))
+  
 ```
 
-Ce test  nous renvoie que les données sont essentiellement constantes
+Confirment que ces éléments n'ont pas une variance significativement différente

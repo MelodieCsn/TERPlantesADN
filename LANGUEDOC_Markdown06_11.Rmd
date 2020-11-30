@@ -209,13 +209,14 @@ Voici les p-values pour la distribution de chaque élément :
 
 ```{r echo = FALSE}
 i = 2
-while (i < 17) {
-  print(paste("Test de Shapiro entre les données", names(lang_no_out[i]), "et", names(lang_no_out[i+1])))
+while (i < 18) {
+  print(paste("Test de Shapiro entre les données", names(lang_no_out[i])))
   print(shapiro.test(lang_no_out[,i])$p.value)
-  i = i + 2
+  i = i + 1
 }
+
 ```
-Ici, nous remarquons que les éléments dont la distribution ne suit pas une loi normale après avoir enlevé les outliers sont : Cu, Fe et C
+Ici, nous remarquons que les éléments dont la distribution ne suit pas une loi normale après avoir enlevé les outliers sont : Mn, Na, Zn, Fe_a et Mg-e
 
 ### Test de significativité sur les moyennes : Wilcoxon
 Ici on a choisi un test de Wilcoxon (car on ne respecte pas les pré-requis pour un test paramétrique pour toutes nos variables) pour des valeurs paired, car la mesure en Co2 ambiant et élevé sont réalisées sur les mêmes génotypes. Vous trouverez ci dessous des violin plots deux à deux et la p-value de chaque paire avec le test de Wilcoxon.
@@ -254,28 +255,60 @@ while (i < 17) {
 }
 ```
 
+On peut constater en langardant les graphes et le p-values du test de Wilcoxon que les éléments Cu,Fe,Mn,Na,C et N ont des moyennent significativement différentes entre CO2 ambiant et élevé. 
+
 ### Test de significativité sur les moyennes pour les répartitions normales : Student
 
+Pour avoir la certitude que les moyennes sont significativement différentes, nous avons fait un test de Student sur les éléments dont la répartition est normale.
+
 ```{r echo = FALSE}
+
+  print("Test de Student entre les données C_aCo2 et C_eCo2")
+  print(paste("p-value = ",t.test(lang_no_out$C_aCo2, lang_no_out$C_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données N_aCo2 et N_eCo2")
+  print(paste("p-value = ",t.test(lang_no_out$N_aCo2, lang_no_out$N_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données Cu_aCo2 et Cu_eCo2")
+  print(paste("p-value = ",t.test(lang_no_out$Cu_aCo2, lang_no_out$Cu_eCo2, paired = TRUE)$p.value))
+  
+  
+```
+
+Ici, on observe que tous les éléments de distribution normales ont une moyenne significativement différente.
+
+Nous sommes donc encore plus assurés que les moyennes sont significativement différentes
+
+### Test de significativité sur les variances pour les répartitions non normales : Levene
+
+```{r echo =FALSE}
+library(lawstat)
 i = 2
 while (i < 17) {
-  print(paste("Test de Student entre les données", names(lang_no_out[i]), "et", names(lang_no_out[i+1])))
-  print(paste("p-value = ",t.test(lang_no_out[,i+1], lang_no_out[,i], paired = TRUE)$p.value))
+  print(paste("Test de Levene entre les données", names(lang_no_out[i]), "et", names(lang_no_out[i+1])))
+  a = lang_no_out[,i+1]
+  e = lang_no_out[,i]
+  values = c(a,e)
+  factor = c(rep('aCo2',length(a)), rep('eCo2',length(e)))
+  print(paste("p-value = ",levene.test(values, factor)$p.value))
   i = i + 2
 }
+
 ```
+### Test de significativité sur les variances pour les répartitions normales : Fisher
 
-### Test de significativité sur les variances pour les répartitions non normales : Fligner_Killeen's
-
+  
 ```{r echo = FALSE}
+print("Test de Fisher entre les données C_aCo2 et C_eCo2")
+print(paste("p-value = ",var.test(lang_no_out$C_aCo2, lang_no_out$C_eCo2, paired = TRUE)$p.value))
 
-#lang_no_out_no_Mg <- subset (lang_no_out, select = -c(Mg_eCo2,Mg_aCo2))
-#i = 2
-#while (i < 15) {
-  #print(paste("Test de Fligner-Kileen's entre les données", names(lang_no_out[i]), "et", names(lang_no_out[i+1])))
-  #print(paste("p-value = ",fligner.test(lang_no_out_no_Mg[,i+1], lang_no_out_no_Mg[,i], paired = TRUE)$p.value))
-  #i = i + 2
-#}
+print("Test de Fisher entre les données N_aCo2 et N_eCo2")
+print(paste("p-value = ",var.test(lang_no_out$N_aCo2, lang_no_out$N_eCo2, paired = TRUE)$p.value))
+  
+print("Test de Fisher entre les données Cu_aCo2 et Cu_eCo2")
+print(paste("p-value = ",var.test(lang_no_out$Cu_aCo2, lang_no_out$Cu_eCo2, paired = TRUE)$p.value))
+  
 ```
+  Confirme que le carbonne a une variance significativement différente, et confirme que Cu et N n'ont pas de variance significativement différente
+  
 
-Ce test  nous renvoie que les données sont essentiellement constantes

@@ -1,0 +1,70 @@
+---
+title: "nanweloveU"
+author: "Mélodie"
+date: "24/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tentative de garder les plantes qui sont des outliers pour certaines observations
+
+On veut essayer de remplacer par des Na les valeurs abérrantes sans supprimer toute la ligne
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggpubr)
+```
+
+
+```{r}
+toua <- read.csv2("TOUA_phenotypes.csv")
+head(toua)
+```
+
+```{r message=FALSE, warning=FALSE}
+toua$C_change <- round(((toua$C_eCo2-toua$C_aCo2)/toua$C_aCo2)*100, digits = 2)
+toua$Cu_change <- round(((toua$Cu_eCo2-toua$Cu_aCo2)/toua$Cu_aCo2)*100, digits = 2)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(naniar)
+toua_no_out <- toua
+
+
+k= 3
+
+toua_no_out_NA <- toua[1:17]
+for (i in 2:17) {
+  binf <- median(toua[,i]) - k* mad(toua[,i])
+  bsup <- median(toua[,i]) + k* mad(toua[,i])
+  outlier_idx <- which(toua_no_out_NA[,i] < binf | toua_no_out_NA[,i] > bsup)
+  if (length(outlier_idx) == 0) {
+    toua_no_out_NA = toua_no_out_NA
+  }
+  else{
+    toua_no_out_NA[c(outlier_idx),i] ="NA"
+  }
+}
+  
+```
+
+```{r fig.height=4, fig.width=4, warning=FALSE}
+i = 2
+while (i < 17) {
+plot(toua_no_out_NA[,i+1], toua_no_out_NA[,i], xlab = names(toua_no_out_NA[i+1]), ylab = names(toua_no_out_NA[i]),asp=1) 
+abline(0,1, col = "blue")
+i = i + 2}
+
+```
+```{r echo = FALSE}
+i = 2
+while (i < 18) {
+  print(paste("Test de Shapiro entre les données", names(toua_no_out_NA[i])))
+  print(shapiro.test(toua_no_out_NA[,i])$p.value)
+  i = i + 1
+}
+```

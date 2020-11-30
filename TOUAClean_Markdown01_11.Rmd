@@ -129,8 +129,8 @@ library(viridis)
 
 ```{r}
 ggplot(toua_chl, aes(element, valeur, fill = element))+
-  stat_summary(fun = mean, geom = "bar") +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2)+
+  stat_summary(fun = "mean", geom = "bar") +
+  stat_summary(fun.data = mean_se , geom = "errorbar", width = 0.2)+
   geom_hline(yintercept = 0, color = "red", linetype = "dashed", size = 1) +
   scale_fill_viridis_d() +
   scale_color_viridis_d() +
@@ -142,7 +142,7 @@ Observations :
 1) On n'observe pas vraiment de hausse des taux de Carbonne mesurés (contrairement à ce qui a été vu chez le riz par exemple) mais cela s'explique par le fait que la mesure est rapportée au poids de la plante. Ce résultat est donc plutôt normal.
 2) On observe une forte diminution du zinc et du fer, deux nutriments essentiels dans l'alimentation, ainsi qu'une grande diminution de l'azote. On observe des diminutions moins marquées mais néanmoins notables pour le magnésium et le cuivre. Enfin, on peut voir une augmentation du manganèse assez importante pour être soulignée.
 
-##Scatter Plots
+### Scatter Plots
 
 Afin de visualiser d'une autre façon si il y a une perte de certains éléments quand la plante est en condition de fort CO2, nous avons créé des scatter plots.
 
@@ -155,8 +155,8 @@ plot(toua_no_out[,i+1], toua_no_out[,i], xlab = names(toua_no_out[i+1]), ylab = 
 abline(0,1, col = "blue")
 i = i + 2}
 
-
 ```
+
 
 
 La ligne bleue représente la droite d'ordonnée à l'origine 0 et de coefficient directeur 1. Nous pouvons déjà constater visuellement que le Fer, le Magnénium, le zinc et l'azote ont l'air de diminuer en condition de CO2 élevé.
@@ -180,7 +180,7 @@ toua_long = melt(toua_no_out_no_ch)
 #print(head(toua_long))
 
 ggplot(data= toua_long, aes(x=variable, y=value))+
-  geom_violin(aes(fill=variable, draw_quantiles = c(0.5)))+
+  geom_violin(aes(fill=variable), draw_quantiles = c(0.25,0.5,0.75))+
   geom_jitter(alpha=0.2)+
   facet_wrap(~variable,scales ="free")+
   ggtitle("Violin plots de chaque élément")+
@@ -213,14 +213,14 @@ Voici les p-values pour la distribution de chaque élément :
 
 ```{r echo = FALSE}
 i = 2
-while (i < 17) {
-  print(paste("Test de Shapiro entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
+while (i < 18) {
+  print(paste("Test de Shapiro entre les données", names(toua_no_out[i])))
   print(shapiro.test(toua_no_out[,i])$p.value)
-  i = i + 2
+  i = i + 1
 }
 ```
 
-Ici, nous remarquons que les éléments dont la distribution ne suit pas une loi normale après avoir enlevé les outliers sont : Mg, Mn, Zn et N
+Ici, nous remarquons que les éléments dont la distribution suit une loi normale après avoir enlevé les outliers sont : Mg, Mn, Zn, C et N
 
 ### Test de significativité sur les moyennes : Wilcoxon
 Ici on a choisi un test de Wilcoxon (car on ne respecte pas les pré-requis pour un test paramétrique pour toutes nos variables) pour des valeurs paired, car la mesure en Co2 ambiant et élevé sont réalisées sur les mêmes génotypes. Vous trouverez ci dessous des violin plots deux à deux et la p-value de chaque paire avec le test de Wilcoxon.
@@ -237,7 +237,7 @@ nb.cols <- 16
 mycolors <- colorRampPalette(brewer.pal(8, "Paired"))(nb.cols)
 
 ggplot(data = toua_long, aes(x = Co2, y = value)) +
-  geom_violin(aes(fill = variable), draw_quantiles = c(0.5)) +
+  geom_violin(aes(fill = variable), draw_quantiles = c(0.25,0.5,0.75)) +
   facet_wrap( ~ element, scales = "free") +
   scale_fill_manual(values = mycolors) +
   stat_compare_means(paired = TRUE, method = "wilcox")
@@ -259,29 +259,73 @@ while (i < 17) {
   i = i+2
 }
 ```
+Après avoir observé ces deux graphes et leur p-value, nous constatons que les éléments Cu,Fe,Mg,Mn,Zn,N ont des moyennes significativement différentes. Seuls le Na et le C n'ont pas de moyennes très différentes.
 
 ### Test de significativité sur les moyennes pour les répartitions normales : Student
 
+Pour avoir la certitude que les moyennes sont significativement différentes, nous avons fait un test de Student sur les éléments dont la répartition est normale.
+
 ```{r echo = FALSE}
+#i = 2
+#while (i < 17) {
+#  print(paste("Test de Student entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
+#  print(paste("p-value = ",t.test(toua_no_out[,i+1], toua_no_out[,i], paired = TRUE)$p.value))
+#  i = i + 2
+#}
+  print("Test de Student entre les données Mg_aCo2 et Mg_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out$Mg_aCo2, toua_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données Mn_aCo2 et Mn_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out$Mn_aCo2, toua_no_out$Mn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données Zn_aCo2 et Zn_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out$Zn_aCo2, toua_no_out$Zn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données C_aCo2 et C_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out$C_aCo2, toua_no_out$C_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données N_aCo2 et N_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out$N_aCo2, toua_no_out$N_eCo2, paired = TRUE)$p.value))
+  
+  
+
+```
+
+On observe que tous les éléments de distribution normales sauf le Carbonne ont une moyenne significativement différente. Les résultats du Carbonne ne nous inquiètent pas outre mesure à cause des raisons expliquées plus haut, et une de ses deux données était presque non normale ce qui pourrait avoir faussé son résultat au test.
+
+### Test de significativité sur les variances pour les répartitions non normales : Levene
+
+
+```{r echo = FALSE}
+library(lawstat)
 i = 2
 while (i < 17) {
-  print(paste("Test de Student entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
-  print(paste("p-value = ",t.test(toua_no_out[,i+1], toua_no_out[,i], paired = TRUE)$p.value))
+  print(paste("Test de Levene entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
+  a = toua_no_out[,i+1]
+  e = toua_no_out[,i]
+  values = c(a,e)
+  factor = c(rep('aCo2',length(a)), rep('eCo2',length(e)))
+  print(paste("p-value = ",levene.test(values, factor)$p.value))
   i = i + 2
 }
+
 ```
-
-### Test de significativité sur les variances pour les répartitions non normales : Fligner_Killeen's
-
+### Test de significativité sur les variances pour les répartitions normales : Fisher
 ```{r echo = FALSE}
-
-toua_no_out_no_Mg <- subset (toua_no_out, select = -c(Mg_eCo2,Mg_aCo2))
-i = 2
-while (i < 15) {
-  print(paste("Test de Fligner-Kileen's entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
-  print(paste("p-value = ",fligner.test(toua_no_out_no_Mg[,i+1], toua_no_out_no_Mg[,i], paired = TRUE)$p.value))
-  i = i + 2
-}
+print("Test de Fisher entre les données Mg_aCo2 et Mg_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out$Mg_aCo2, toua_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données Mn_aCo2 et Mn_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out$Mn_aCo2, toua_no_out$Mn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données Zn_aCo2 et Zn_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out$Zn_aCo2, toua_no_out$Zn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données C_aCo2 et C_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out$C_aCo2, toua_no_out$C_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données N_aCo2 et N_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out$N_aCo2, toua_no_out$N_eCo2, paired = TRUE)$p.value))
+  
 ```
-
-Ce test nous apprend que toutes les variables sont de variances significativement différentes entre le fort CO2 et le CO2 ambiant
+Zn ici variance différente alors que pas trouvé par test de levene
