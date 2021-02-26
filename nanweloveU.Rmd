@@ -17,6 +17,9 @@ On veut essayer de remplacer par des Na les valeurs abérrantes sans supprimer t
 library(tidyr)
 library(dplyr)
 library(ggpubr)
+library(ggplot2)
+library(hrbrthemes)
+library(viridis)
 ```
 
 
@@ -46,7 +49,7 @@ for (i in 2:17) {
     toua_no_out_NA = toua_no_out_NA
   }
   else{
-    toua_no_out_NA[c(outlier_idx),i] ="NA"
+    toua_no_out_NA[c(outlier_idx),i] =NA
   }
 }
   
@@ -68,3 +71,175 @@ while (i < 18) {
   i = i + 1
 }
 ```
+### Calcul des colonnes de variation sans les outliers
+
+Comme nous avons supprimé les lignes contenant des outliers, ils nous faut recalculer les colonnes de variation pour chaque élément, ce qui nous donne ce nouveau DataFrame : 
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+# Suppression des anciennes colonnes
+
+# Ajout des nouvelles colonnes
+
+toua_no_out_NA$N_change <- round(((toua_no_out_NA$N_eCo2-toua_no_out_NA$N_aCo2)/toua_no_out_NA$N_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Fe_change <- round(((toua_no_out_NA$Fe_eCo2-toua_no_out_NA$Fe_aCo2)/toua_no_out_NA$Fe_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Mg_change <- round(((toua_no_out_NA$Mg_eCo2-toua_no_out_NA$Mg_aCo2)/toua_no_out_NA$Mg_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Mn_change <- round(((toua_no_out_NA$Mn_eCo2-toua_no_out_NA$Mn_aCo2)/toua_no_out_NA$Mn_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Na_change <- round(((toua_no_out_NA$Na_eCo2-toua_no_out_NA$Na_aCo2)/toua_no_out_NA$Na_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Zn_change <- round(((toua_no_out_NA$Zn_eCo2-toua_no_out_NA$Zn_aCo2)/toua_no_out_NA$Zn_aCo2)*100, digits = 2)
+
+toua_no_out_NA$C_change <- round(((toua_no_out_NA$C_eCo2-toua_no_out_NA$C_aCo2)/toua_no_out_NA$C_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Cu_change <- round(((toua_no_out_NA$Cu_eCo2-toua_no_out_NA$Cu_aCo2)/toua_no_out_NA$Cu_aCo2)*100, digits = 2)
+
+head(toua_no_out_NA)
+
+toua_ch <- select(toua_no_out_NA,"genotype"|contains("change"))
+
+```
+
+### Passage en format long avec gather 
+
+Pour pouvoir réaliser certaines visualisations, nous avons besoin  de mettre nos données au format long, ce qui nous donne le DataFrame suivant :
+
+```{r message=FALSE, warning=FALSE, echo= FALSE}
+toua_chl <- gather(data = toua_ch, key = "element", value = "valeur", 2:9)
+head(toua_chl)
+```
+
+## Première Visualisation : Variation moyenne des mesures entre le aCO2 et le eCO2
+
+Nous avons ici voulu reproduire une visualisation qui avait été faite dans le cas du riz pour montrer la variation de chaque élément quand la plante est en condition de fort CO2 et quand elle est en condition de CO2 ambiant.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(hrbrthemes)
+library(viridis)
+```
+
+```{r}
+ggplot(toua_chl, aes(element, valeur, fill = element))+
+  stat_summary(fun = "mean", geom = "bar") +
+  stat_summary(fun.data = mean_se , geom = "errorbar", width = 0.2)+
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed", size = 1) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme_bw()
+```
+```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE, echo = FALSE}
+library(reshape2)
+library(ggplot2)
+
+#on met au format long
+toua_no_out_no_ch = toua_no_out_NA
+toua_no_out_no_ch = subset (toua_no_out_no_ch, select = -c(N_change:Cu_change))
+
+
+toua_long = melt(toua_no_out_no_ch)
+#print(head(toua_long))
+
+ggplot(data= toua_long, aes(x=variable, y=value))+
+  geom_violin(aes(fill=variable), draw_quantiles = c(0.25,0.5,0.75))+
+  geom_jitter(alpha=0.2)+
+  facet_wrap(~variable,scales ="free")+
+  ggtitle("Violin plots de chaque élément")+
+  stat_compare_means(method = t.test)
+
+```
+### Test de significativité sur les moyennes : Wilcoxon
+Ici on a choisi un test de Wilcoxon (car on ne respecte pas les pré-requis pour un test paramétrique pour toutes nos variables) pour des valeurs paired, car la mesure en Co2 ambiant et élevé sont réalisées sur les mêmes génotypes. Vous trouverez ci dessous des violin plots deux à deux et la p-value de chaque paire avec le test de Wilcoxon.
+
+```{r fig.height=15, fig.width=15, message=FALSE, warning=FALSE, echo = FALSE}
+library(ggplot2)
+library(RColorBrewer)
+
+toua_long = melt(toua_no_out_no_ch)
+toua_long$element = stringr::str_split_fixed(toua_long$variable, "_",2)[,1]
+toua_long$Co2 = stringr::str_split_fixed(toua_long$variable, "_",2)[,2]
+
+nb.cols <- 16
+mycolors <- colorRampPalette(brewer.pal(8, "Paired"))(nb.cols)
+
+ggplot(data = toua_long, aes(x = Co2, y = value)) +
+  geom_violin(aes(fill = variable), draw_quantiles = c(0.25,0.5,0.75)) +
+  facet_wrap( ~ element, scales = "free") +
+  scale_fill_manual(values = mycolors) +
+  stat_compare_means(paired = TRUE, method = "wilcox")
+```
+### Autre visualisation du résultat du test de Wilcoxon
+
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
+i=2
+while (i < 17) {
+  plot_paired <- ggpaired(toua_no_out_NA, cond1 = names(toua_no_out_NA[i+1]) , cond2 = names(toua_no_out_NA[i]),
+           line.color = "dark gray", line.size = 0.6, color = "condition",
+           width = 0.7, linetype = "dotted" ,
+           palette = "aas")+
+    stat_compare_means(paired = TRUE)
+  print(plot_paired)
+  i = i+2
+}
+```
+```{r echo = FALSE}
+#i = 2
+#while (i < 17) {
+#  print(paste("Test de Student entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
+#  print(paste("p-value = ",t.test(toua_no_out[,i+1], toua_no_out[,i], paired = TRUE)$p.value))
+#  i = i + 2
+#}
+  print("Test de Student entre les données Mg_aCo2 et Mg_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out_NA$Mg_aCo2, toua_no_out_NA$Mg_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données Mn_aCo2 et Mn_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out_NA$Mn_aCo2, toua_no_out_NA$Mn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données Zn_aCo2 et Zn_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out_NA$Zn_aCo2, toua_no_out_NA$Zn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données C_aCo2 et C_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out_NA$C_aCo2, toua_no_out_NA$C_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Student entre les données N_aCo2 et N_eCo2")
+  print(paste("p-value = ",t.test(toua_no_out_NA$N_aCo2, toua_no_out_NA$N_eCo2, paired = TRUE)$p.value))
+  
+  
+
+```
+```{r echo = FALSE}
+library(lawstat)
+i = 2
+while (i < 17) {
+  print(paste("Test de Levene entre les données", names(toua_no_out_NA[i]), "et", names(toua_no_out_NA[i+1])))
+  a = toua_no_out_NA[,i+1]
+  e = toua_no_out_NA[,i]
+  values = c(a,e)
+  factor = c(rep('aCo2',length(a)), rep('eCo2',length(e)))
+  print(paste("p-value = ",levene.test(values, factor, na.rm = true)$p.value))
+  i = i + 2
+}
+
+```
+```{r echo = FALSE}
+print("Test de Fisher entre les données Mg_aCo2 et Mg_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out_NA$Mg_aCo2, toua_no_out_NA$Mg_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données Mn_aCo2 et Mn_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out_NA$Mn_aCo2, toua_no_out_NA$Mn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données Zn_aCo2 et Zn_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out_NA$Zn_aCo2, toua_no_out_NA$Zn_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données C_aCo2 et C_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out_NA$C_aCo2, toua_no_out_NA$C_eCo2, paired = TRUE)$p.value))
+  
+  print("Test de Fisher entre les données N_aCo2 et N_eCo2")
+  print(paste("p-value = ",var.test(toua_no_out_NA$N_aCo2, toua_no_out_NA$N_eCo2, paired = TRUE)$p.value))
+  
+```
+
+
+```{r fig.height=15, fig.width=15, message=FALSE, warning=FALSE, echo = FALSE}

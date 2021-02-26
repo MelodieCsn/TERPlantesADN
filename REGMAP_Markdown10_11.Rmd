@@ -39,6 +39,7 @@ reg_clean = reg_no_ch[-c(17,42),]
 head(reg_clean)
 
 ```
+
 ## Identification des outliers
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.width=4}
@@ -73,8 +74,28 @@ for (i in 2:17) {
     else{
       reg_no_out = reg_no_out[-c(outlier_idx),]
       }
-  print(outlier_idx)
+  #print(outlier_idx)
   }
+  
+```
+Nous créons aussi un dataFrame qui garde les lignes qui contiennent des observations outlier et qui remplace juste ces observations par des NA's.
+
+```{r message=FALSE, warning=FALSE}
+library(naniar)
+k= 3
+
+reg_no_out_NA <- reg_clean
+for (i in 2:17) {
+  binf <- median(reg_clean[,i]) - k* mad(reg_clean[,i])
+  bsup <- median(reg_clean[,i]) + k* mad(reg_clean[,i])
+  outlier_idx <- which(reg_no_out_NA[,i] < binf | reg_no_out_NA[,i] > bsup)
+  if (length(outlier_idx) == 0) {
+    reg_no_out_NA = reg_no_out_NA
+  }
+  else{
+    reg_no_out_NA[c(outlier_idx),i] =NA
+  }
+}
   
 ```
 
@@ -87,30 +108,30 @@ Comme nous avons supprimé les lignes contenant des outliers, ils nous faut reca
 ```{r message=FALSE, warning=FALSE, echo = FALSE}
 library(tidyverse)
 
-reg_no_out_ch <- reg_no_out
+reg_no_out_ch <- reg_no_out_NA
 
-reg_no_out_ch <- mutate(reg_no_out_ch,N_change = round(((reg_no_out$N_eCo2-reg_no_out$N_aCo2)/reg_no_out$N_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,N_change = round(((reg_no_out_NA$N_eCo2-reg_no_out_NA$N_aCo2)/reg_no_out_NA$N_aCo2)*100, digits = 2)
 )
 
-reg_no_out_ch <- mutate(reg_no_out_ch,Fe_change = round(((reg_no_out$Fe_eCo2-reg_no_out$Fe_aCo2)/reg_no_out$Fe_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,Fe_change = round(((reg_no_out_NA$Fe_eCo2-reg_no_out_NA$Fe_aCo2)/reg_no_out_NA$Fe_aCo2)*100, digits = 2)
 )
 
-reg_no_out_ch <- mutate(reg_no_out_ch,Mg_change = round(((reg_no_out$Mg_eCo2-reg_no_out$Mg_aCo2)/reg_no_out$Mg_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,Mg_change = round(((reg_no_out_NA$Mg_eCo2-reg_no_out_NA$Mg_aCo2)/reg_no_out_NA$Mg_aCo2)*100, digits = 2)
 )
 
-reg_no_out_ch <- mutate(reg_no_out_ch,Mn_change = round(((reg_no_out$Mn_eCo2-reg_no_out$Mn_aCo2)/reg_no_out$Mn_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,Mn_change = round(((reg_no_out_NA$Mn_eCo2-reg_no_out_NA$Mn_aCo2)/reg_no_out_NA$Mn_aCo2)*100, digits = 2)
 )
 
-reg_no_out_ch <- mutate(reg_no_out_ch,Na_change = round(((reg_no_out$Na_eCo2-reg_no_out$Na_aCo2)/reg_no_out$Na_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,Na_change = round(((reg_no_out_NA$Na_eCo2-reg_no_out_NA$Na_aCo2)/reg_no_out_NA$Na_aCo2)*100, digits = 2)
 )
 
-reg_no_out_ch <- mutate(reg_no_out_ch,Zn_change = round(((reg_no_out$Zn_eCo2-reg_no_out$Zn_aCo2)/reg_no_out$Zn_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,Zn_change = round(((reg_no_out_NA$Zn_eCo2-reg_no_out_NA$Zn_aCo2)/reg_no_out_NA$Zn_aCo2)*100, digits = 2)
 )
 
-reg_no_out_ch <- mutate(reg_no_out_ch,C_change = round(((reg_no_out$C_eCo2-reg_no_out$C_aCo2)/reg_no_out$C_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,C_change = round(((reg_no_out_NA$C_eCo2-reg_no_out_NA$C_aCo2)/reg_no_out_NA$C_aCo2)*100, digits = 2)
 )
 
-reg_no_out_ch <- mutate(reg_no_out_ch,Cu_change = round(((reg_no_out$Cu_eCo2-reg_no_out$Cu_aCo2)/reg_no_out$Cu_aCo2)*100, digits = 2)
+reg_no_out_ch <- mutate(reg_no_out_ch,Cu_change = round(((reg_no_out_NA$Cu_eCo2-reg_no_out_NA$Cu_aCo2)/reg_no_out_NA$Cu_aCo2)*100, digits = 2)
 )
 
 reg_ch <- select(reg_no_out_ch,"genotype"|contains("change"))
@@ -157,7 +178,7 @@ Afin de visualiser d'une autre façon si il y a une perte de certains éléments
 i = 2
 while (i < 17) {
   print(
-    ggplot(data= reg_no_out, aes(x =reg_no_out[,i+1], y = reg_no_out[,i]))+
+    ggplot(data= reg_no_out_NA, aes(x =reg_no_out_NA[,i+1], y = reg_no_out_NA[,i]))+
     geom_point()+
     xlab(colnames(reg)[i+1]) + ylab(colnames(reg)[i])+
     geom_abline(slope = 1, intercept = 1,col="blue")
@@ -175,22 +196,22 @@ library(reshape2)
 library(ggplot2)
 library(dplyr)
 
-reg_no_out_no_ch = reg_no_out
+reg_no_out_no_ch = reg_no_out_NA
 reg_long = melt(reg_no_out_no_ch)
 
-ggplot(data= reg_long, aes(x=variable, y=value))+
+gviolin = ggplot(data= reg_long, aes(x=variable, y=value))+
   geom_violin(aes(fill=variable))+
   geom_jitter(alpha=0.2)+
   facet_wrap(~variable,scales ="free")+
   ggtitle("Violin plots de chaque élément")
- 
+print(gviolin)
 ```
 
 ### Histogrammes
 
 ```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE, echo=FALSE}
 
-#print(shapiro.test(reg_no_out[,i]))
+#print(shapiro.test(reg_no_out_NA[,i]))
 
 ggplot(data= reg_long, aes(x=value))+
   geom_histogram()+
@@ -221,8 +242,8 @@ Voici les p-values pour la distribution de chaque élément :
 ```{r echo = FALSE}
 i = 2
 while (i < 18) {
-  print(paste("Test de Shapiro entre les données", names(reg_no_out[i])))
-  print(shapiro.test(reg_no_out[,i])$p.value)
+  print(paste("Test de Shapiro entre les données", names(reg_no_out_NA[i])))
+  print(shapiro.test(reg_no_out_NA[,i])$p.value)
   i = i + 1
 }
 ```
@@ -247,19 +268,19 @@ ggplot(data = reg_long, aes(x = Co2, y = value)) +
   geom_violin(aes(fill = variable), draw_quantiles = c(0.25,0.5,0.75)) +
   facet_wrap( ~ element, scales = "free") +
   scale_fill_manual(values = mycolors) +
-  stat_compare_means(paired = TRUE, method = "wilcox")
+  stat_compare_means()
 ```
 
 ### Autre visualisation du résultat du test de Wilcoxon
 
-```{r fig.height=4, fig.width=4,}
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
 i=2
 while (i < 17) {
-  plot_paired <- ggpaired(reg_no_out, cond1 = names(reg_no_out[i+1]) , cond2 = names(reg_no_out[i]),
+  plot_paired <- ggpaired(reg_no_out_NA, cond1 = names(reg_no_out_NA[i+1]) , cond2 = names(reg_no_out_NA[i]),
            line.color = "dark gray", line.size = 0.6, color = "condition",
            width = 0.7, linetype = "dotted" ,
            palette = "aas")+
-    stat_compare_means(paired = TRUE)
+    stat_compare_means()
   print(plot_paired)
   i = i+2
 }
@@ -272,13 +293,13 @@ On peut constater en regardant les graphes et le p-values du test de Wilcoxon qu
 ```{r echo = FALSE}
 
   print("Test de Student entre les données Mg_aCo2 et Mg_eCo2")
-  print(paste("p-value = ",t.test(reg_no_out$Mg_aCo2, reg_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",t.test(reg_no_out_NA$Mg_aCo2, reg_no_out_NA$Mg_eCo2, paired = TRUE)$p.value))
   
-  print("Test de Student entre les données Mn_aCo2 et Mn_eCo2")
-  print(paste("p-value = ",t.test(reg_no_out$Mn_aCo2, reg_no_out$Mn_eCo2, paired = TRUE)$p.value))
+  print("Test de Student entre les données C_aCo2 et C_eCo2")
+  print(paste("p-value = ",t.test(reg_no_out_NA$C_aCo2, reg_no_out_NA$C_eCo2, paired = TRUE)$p.value))
    
   print("Test de Student entre les données Cu_aCo2 et Cu_eCo2")
-  print(paste("p-value = ",t.test(reg_no_out$Cu_aCo2, reg_no_out$Cu_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",t.test(reg_no_out_NA$Cu_aCo2, reg_no_out_NA$Cu_eCo2, paired = TRUE)$p.value))
   
 ```
 
@@ -293,27 +314,36 @@ Nous sommes donc encore plus assurés que les moyennes sont significativement di
 library(lawstat)
 i = 2
 while (i < 17) {
-  print(paste("Test de Levene entre les données", names(reg_no_out[i]), "et", names(reg_no_out[i+1])))
-  a = reg_no_out[,i+1]
-  e = reg_no_out[,i]
+  print(paste("Test de Levene entre les données", names(reg_no_out_NA[i]), "et", names(reg_no_out_NA[i+1])))
+  a = reg_no_out_NA[,i+1]
+  e = reg_no_out_NA[,i]
   values = c(a,e)
   factor = c(rep('aCo2',length(a)), rep('eCo2',length(e)))
-  print(paste("p-value = ",levene.test(values, factor)$p.value))
+  isna = which(!is.na(values))
+  factor = factor[isna]
+  values = values[isna]
+  print(levene.test(values, factor)$p.value)
   i = i + 2
 }
 
 ```
+
+```{r message=FALSE, warning=FALSE}
+#sapply(reg_no_out_NA, var(na.rm=TRUE))
+sapply(reg_no_out_NA, function(x)  var=var(x,na.rm=TRUE))
+```
+
 ### Test de significativité sur les variances pour les répartitions normales : Fisher
 ```{r echo = FALSE}
 
   print("Test de Fisher entre les données Mg_aCo2 et Mg_eCo2")
-  print(paste("p-value = ",var.test(reg_no_out$Mg_aCo2, reg_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  print(var.test(reg_no_out_NA$Mg_aCo2, reg_no_out_NA$Mg_eCo2, paired = TRUE))
   
-  print("Test de Fisher entre les données Mn_aCo2 et Mn_eCo2")
-  print(paste("p-value = ",var.test(reg_no_out$Mn_aCo2, reg_no_out$Mn_eCo2, paired = TRUE)$p.value))
+  print("Test de Fisher entre les données C_aCo2 et C_eCo2")
+  print(var.test(reg_no_out_NA$C_aCo2, reg_no_out_NA$C_eCo2, paired = TRUE))
    
   print("Test de Fisher entre les données Cu_aCo2 et Cu_eCo2")
-  print(paste("p-value = ",var.test(reg_no_out$Cu_aCo2, reg_no_out$Cu_eCo2, paired = TRUE)$p.value))
+  print(var.test(reg_no_out_NA$Cu_aCo2, reg_no_out_NA$Cu_eCo2, paired = TRUE))
   
 ```
 

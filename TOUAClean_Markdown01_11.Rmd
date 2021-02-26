@@ -58,7 +58,7 @@ Comme le montrent ces deux Scatter plots,certaines valeurs pour certains éléme
  Nous allons maintenant supprimer les outliers en choisissant d'enlever les lignes contenant des valeurs plus de trois fois plus grandes que la médiane. Nous avons choisi la médiane et non l'écart type car les valeurs des outliers ont moins d'influence sur elle.
  
 ```{r message=FALSE, warning=FALSE}
-toua_no_out <- toua
+toua_no_out <- toua[1:17]
 k= 3
 for (i in 2:17) {
   binf <- median(toua[,i]) - k* mad(toua[,i])
@@ -75,36 +75,54 @@ for (i in 2:17) {
   
 ```
 
+Nous créons aussi un dataFrame qui garde les lignes qui contiennent des observations outlier et qui remplace juste ces observations par des NA's.
+
+```{r message=FALSE, warning=FALSE}
+library(naniar)
+k= 3
+
+toua_no_out_NA <- toua[1:17]
+for (i in 2:17) {
+  binf <- median(toua[,i]) - k* mad(toua[,i])
+  bsup <- median(toua[,i]) + k* mad(toua[,i])
+  outlier_idx <- which(toua_no_out_NA[,i] < binf | toua_no_out_NA[,i] > bsup)
+  if (length(outlier_idx) == 0) {
+    toua_no_out_NA = toua_no_out_NA
+  }
+  else{
+    toua_no_out_NA[c(outlier_idx),i] =NA
+  }
+}
+  
+```
+
 ### Calcul des colonnes de variation sans les outliers
 
 Comme nous avons supprimé les lignes contenant des outliers, ils nous faut recalculer les colonnes de variation pour chaque élément, ce qui nous donne ce nouveau DataFrame : 
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
-# Suppression des anciennes colonnes
-toua_no_out_no_ch <- subset (toua_no_out, select = -c(Fe_change:Cu_change))
-toua_no_out <- subset(toua_no_out_no_ch, select = -c(N_change))
 
 # Ajout des nouvelles colonnes
 
-toua_no_out$N_change <- round(((toua_no_out$N_eCo2-toua_no_out$N_aCo2)/toua_no_out$N_aCo2)*100, digits = 2)
+toua_no_out_NA$N_change <- round(((toua_no_out_NA$N_eCo2-toua_no_out_NA$N_aCo2)/toua_no_out_NA$N_aCo2)*100, digits = 2)
 
-toua_no_out$Fe_change <- round(((toua_no_out$Fe_eCo2-toua_no_out$Fe_aCo2)/toua_no_out$Fe_aCo2)*100, digits = 2)
+toua_no_out_NA$Fe_change <- round(((toua_no_out_NA$Fe_eCo2-toua_no_out_NA$Fe_aCo2)/toua_no_out_NA$Fe_aCo2)*100, digits = 2)
 
-toua_no_out$Mg_change <- round(((toua_no_out$Mg_eCo2-toua_no_out$Mg_aCo2)/toua_no_out$Mg_aCo2)*100, digits = 2)
+toua_no_out_NA$Mg_change <- round(((toua_no_out_NA$Mg_eCo2-toua_no_out_NA$Mg_aCo2)/toua_no_out_NA$Mg_aCo2)*100, digits = 2)
 
-toua_no_out$Mn_change <- round(((toua_no_out$Mn_eCo2-toua_no_out$Mn_aCo2)/toua_no_out$Mn_aCo2)*100, digits = 2)
+toua_no_out_NA$Mn_change <- round(((toua_no_out_NA$Mn_eCo2-toua_no_out_NA$Mn_aCo2)/toua_no_out_NA$Mn_aCo2)*100, digits = 2)
 
-toua_no_out$Na_change <- round(((toua_no_out$Na_eCo2-toua_no_out$Na_aCo2)/toua_no_out$Na_aCo2)*100, digits = 2)
+toua_no_out_NA$Na_change <- round(((toua_no_out_NA$Na_eCo2-toua_no_out_NA$Na_aCo2)/toua_no_out_NA$Na_aCo2)*100, digits = 2)
 
-toua_no_out$Zn_change <- round(((toua_no_out$Zn_eCo2-toua_no_out$Zn_aCo2)/toua_no_out$Zn_aCo2)*100, digits = 2)
+toua_no_out_NA$Zn_change <- round(((toua_no_out_NA$Zn_eCo2-toua_no_out_NA$Zn_aCo2)/toua_no_out_NA$Zn_aCo2)*100, digits = 2)
 
-toua_no_out$C_change <- round(((toua_no_out$C_eCo2-toua_no_out$C_aCo2)/toua_no_out$C_aCo2)*100, digits = 2)
+toua_no_out_NA$C_change <- round(((toua_no_out_NA$C_eCo2-toua_no_out_NA$C_aCo2)/toua_no_out_NA$C_aCo2)*100, digits = 2)
 
-toua_no_out$Cu_change <- round(((toua_no_out$Cu_eCo2-toua_no_out$Cu_aCo2)/toua_no_out$Cu_aCo2)*100, digits = 2)
+toua_no_out_NA$Cu_change <- round(((toua_no_out_NA$Cu_eCo2-toua_no_out_NA$Cu_aCo2)/toua_no_out_NA$Cu_aCo2)*100, digits = 2)
 
-head(toua_no_out)
+head(toua_no_out_NA)
 
-toua_ch <- select(toua_no_out,"genotype"|contains("change"))
+toua_ch <- select(toua_no_out_NA,"genotype"|contains("change"))
 
 ```
 
@@ -151,7 +169,7 @@ Afin de visualiser d'une autre façon si il y a une perte de certains éléments
 ```{r fig.height=4, fig.width=4,}
 i = 2
 while (i < 17) {
-plot(toua_no_out[,i+1], toua_no_out[,i], xlab = names(toua_no_out[i+1]), ylab = names(toua_no_out[i]),asp=1) 
+plot(toua_no_out_NA[,i+1], toua_no_out_NA[,i], xlab = names(toua_no_out_NA[,i+1]), ylab = names(toua_no_out_NA[i]),asp=1) 
 abline(0,1, col = "blue")
 i = i + 2}
 
@@ -171,9 +189,8 @@ library(reshape2)
 library(ggplot2)
 
 #on met au format long
-toua_no_out_no_ch = toua_no_out
-toua_no_out_no_ch = subset (toua_no_out_no_ch, select = -c(N_change:eCN_aCN))
-toua_no_out_no_ch = subset (toua_no_out_no_ch, select = -c(aCN_ratio:Cu_change))
+toua_no_out_no_ch = toua_no_out_NA
+toua_no_out_no_ch = subset (toua_no_out_no_ch, select = -c(N_change:Cu_change))
 
 
 toua_long = melt(toua_no_out_no_ch)
@@ -193,7 +210,7 @@ ggplot(data= toua_long, aes(x=variable, y=value))+
 
 ```{r fig.height=10, fig.width=10, message=FALSE, warning=FALSE, echo=FALSE}
 
-#print(shapiro.test(toua_no_out[,i]))
+#print(shapiro.test(toua_no_out_NA[,i]))
 
 ggplot(data= toua_long, aes(x=value))+
   geom_histogram()+
@@ -214,8 +231,8 @@ Voici les p-values pour la distribution de chaque élément :
 ```{r echo = FALSE}
 i = 2
 while (i < 18) {
-  print(paste("Test de Shapiro entre les données", names(toua_no_out[i])))
-  print(shapiro.test(toua_no_out[,i])$p.value)
+  print(paste("Test de Shapiro entre les données", names(toua_no_out_NA[i])))
+  print(shapiro.test(toua_no_out_NA[,i])$p.value)
   i = i + 1
 }
 ```
@@ -240,25 +257,26 @@ ggplot(data = toua_long, aes(x = Co2, y = value)) +
   geom_violin(aes(fill = variable), draw_quantiles = c(0.25,0.5,0.75)) +
   facet_wrap( ~ element, scales = "free") +
   scale_fill_manual(values = mycolors) +
-  stat_compare_means(paired = TRUE, method = "wilcox")
+  stat_compare_means( method = "wilcox", na.rm = TRUE)
 ```
 
 Ce test nous apprend que pour l'instant, tous les éléments sont significativement différents sauf le Na et le C.
 
 ### Autre visualisation du résultat du test de Wilcoxon
 
-```{r fig.height=4, fig.width=4,}
+```{r fig.height=4, fig.width=4, message=FALSE, warning=FALSE}
 i=2
 while (i < 17) {
-  plot_paired <- ggpaired(toua_no_out, cond1 = names(toua_no_out[i+1]) , cond2 = names(toua_no_out[i]),
+  plot_paired <- ggpaired(toua_no_out_NA, cond1 = names(toua_no_out_NA[i+1]) , cond2 = names(toua_no_out_NA[i]),
            line.color = "dark gray", line.size = 0.6, color = "condition",
            width = 0.7, linetype = "dotted" ,
            palette = "aas")+
-    stat_compare_means(paired = TRUE)
+    stat_compare_means()
   print(plot_paired)
   i = i+2
 }
 ```
+
 Après avoir observé ces deux graphes et leur p-value, nous constatons que les éléments Cu,Fe,Mg,Mn,Zn,N ont des moyennes significativement différentes. Seuls le Na et le C n'ont pas de moyennes très différentes.
 
 ### Test de significativité sur les moyennes pour les répartitions normales : Student
@@ -268,24 +286,24 @@ Pour avoir la certitude que les moyennes sont significativement différentes, no
 ```{r echo = FALSE}
 #i = 2
 #while (i < 17) {
-#  print(paste("Test de Student entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
-#  print(paste("p-value = ",t.test(toua_no_out[,i+1], toua_no_out[,i], paired = TRUE)$p.value))
+#  print(paste("Test de Student entre les données", names(toua_no_out_NA[i]), "et", names(toua_no_out_NA[i+1])))
+#  print(paste("p-value = ",t.test(toua_no_out_NA[,i+1], toua_no_out_NA[,i], paired = TRUE)$p.value))
 #  i = i + 2
 #}
   print("Test de Student entre les données Mg_aCo2 et Mg_eCo2")
-  print(paste("p-value = ",t.test(toua_no_out$Mg_aCo2, toua_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",t.test(toua_no_out_NA$Mg_aCo2, toua_no_out_NA$Mg_eCo2, paired = TRUE)$p.value))
   
   print("Test de Student entre les données Mn_aCo2 et Mn_eCo2")
-  print(paste("p-value = ",t.test(toua_no_out$Mn_aCo2, toua_no_out$Mn_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",t.test(toua_no_out_NA$Mn_aCo2, toua_no_out_NA$Mn_eCo2, paired = TRUE)$p.value))
   
   print("Test de Student entre les données Zn_aCo2 et Zn_eCo2")
-  print(paste("p-value = ",t.test(toua_no_out$Zn_aCo2, toua_no_out$Zn_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",t.test(toua_no_out_NA$Zn_aCo2, toua_no_out_NA$Zn_eCo2, paired = TRUE)$p.value))
   
   print("Test de Student entre les données C_aCo2 et C_eCo2")
-  print(paste("p-value = ",t.test(toua_no_out$C_aCo2, toua_no_out$C_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",t.test(toua_no_out_NA$C_aCo2, toua_no_out_NA$C_eCo2, paired = TRUE)$p.value))
   
   print("Test de Student entre les données N_aCo2 et N_eCo2")
-  print(paste("p-value = ",t.test(toua_no_out$N_aCo2, toua_no_out$N_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",t.test(toua_no_out_NA$N_aCo2, toua_no_out_NA$N_eCo2, paired = TRUE)$p.value))
   
   
 
@@ -300,32 +318,40 @@ On observe que tous les éléments de distribution normales sauf le Carbonne ont
 library(lawstat)
 i = 2
 while (i < 17) {
-  print(paste("Test de Levene entre les données", names(toua_no_out[i]), "et", names(toua_no_out[i+1])))
-  a = toua_no_out[,i+1]
-  e = toua_no_out[,i]
+  print(paste("Test de Levene entre les données", names(toua_no_out_NA[i]), "et", names(toua_no_out_NA[i+1])))
+  a = toua_no_out_NA[,i+1]
+  e = toua_no_out_NA[,i]
   values = c(a,e)
   factor = c(rep('aCo2',length(a)), rep('eCo2',length(e)))
+  isna = which(!is.na(values))
+  factor = factor[isna]
+  values = values[isna]
   print(paste("p-value = ",levene.test(values, factor)$p.value))
   i = i + 2
 }
 
 ```
+```{r message=FALSE, warning=FALSE}
+#sapply(reg_no_out_NA, var(na.rm=TRUE))
+sapply(toua_no_out_NA, function(x)  var=var(x,na.rm=TRUE))
+```
+
 ### Test de significativité sur les variances pour les répartitions normales : Fisher
 ```{r echo = FALSE}
 print("Test de Fisher entre les données Mg_aCo2 et Mg_eCo2")
-  print(paste("p-value = ",var.test(toua_no_out$Mg_aCo2, toua_no_out$Mg_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",var.test(toua_no_out_NA$Mg_aCo2, toua_no_out_NA$Mg_eCo2, paired = TRUE)$p.value))
   
   print("Test de Fisher entre les données Mn_aCo2 et Mn_eCo2")
-  print(paste("p-value = ",var.test(toua_no_out$Mn_aCo2, toua_no_out$Mn_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",var.test(toua_no_out_NA$Mn_aCo2, toua_no_out_NA$Mn_eCo2, paired = TRUE)$p.value))
   
   print("Test de Fisher entre les données Zn_aCo2 et Zn_eCo2")
-  print(paste("p-value = ",var.test(toua_no_out$Zn_aCo2, toua_no_out$Zn_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",var.test(toua_no_out_NA$Zn_aCo2, toua_no_out_NA$Zn_eCo2, paired = TRUE)$p.value))
   
   print("Test de Fisher entre les données C_aCo2 et C_eCo2")
-  print(paste("p-value = ",var.test(toua_no_out$C_aCo2, toua_no_out$C_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",var.test(toua_no_out_NA$C_aCo2, toua_no_out_NA$C_eCo2, paired = TRUE)$p.value))
   
   print("Test de Fisher entre les données N_aCo2 et N_eCo2")
-  print(paste("p-value = ",var.test(toua_no_out$N_aCo2, toua_no_out$N_eCo2, paired = TRUE)$p.value))
+  print(paste("p-value = ",var.test(toua_no_out_NA$N_aCo2, toua_no_out_NA$N_eCo2, paired = TRUE)$p.value))
   
 ```
 Zn ici variance différente alors que pas trouvé par test de levene

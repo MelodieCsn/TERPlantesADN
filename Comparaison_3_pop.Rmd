@@ -1,0 +1,283 @@
+---
+title: "Comparaison des trois populations"
+author: "Mélodie"
+date: "11/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## fichier de visualisations des trois populations ensemble
+
+
+```{r call1, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyr)
+library(dplyr)
+library(ggpubr)
+
+```
+```{r}
+toua <- read.csv2("TOUA_phenotypes.csv")
+reg <- read.table("REGMAP_phenotypes.csv",sep=";",h=TRUE,na.strings = ".")
+lang <- read.table("LANGUEDOC_phenotypes.csv",sep=";",h=TRUE,na.strings = ".")
+
+```
+
+## Suppression des colonnes de changement vides pour lang et regmap
+
+```{r}
+# supression des colonnes inutiles pour l'instant
+
+reg_no_ch <- subset (reg, select = -c(N_change:Zn_change))
+reg_clean = reg_no_ch[-c(17,42),] 
+
+lang_no_ch <- subset (lang, select = -c(N_change:Zn_change))
+lang_clean = lang_no_ch[-c(10,13,109,116,123,131,150,151,179,180,187,189),] 
+
+```
+
+## Remplacement des outliers par des Na pour les trois populations
+
+```{r message=FALSE, warning=FALSE}
+library(naniar)
+k= 3
+
+toua_no_out_NA <- toua[1:17]
+for (i in 2:17) {
+  binf <- median(toua[,i]) - k* mad(toua[,i])
+  bsup <- median(toua[,i]) + k* mad(toua[,i])
+  outlier_idx <- which(toua_no_out_NA[,i] < binf | toua_no_out_NA[,i] > bsup)
+  if (length(outlier_idx) == 0) {
+    toua_no_out_NA = toua_no_out_NA
+  }
+  else{
+    toua_no_out_NA[c(outlier_idx),i] =NA
+  }
+}
+  
+```
+
+```{r message=FALSE, warning=FALSE}
+library(naniar)
+k= 3
+
+reg_no_out_NA <- reg_clean
+for (i in 2:17) {
+  binf <- median(reg_clean[,i]) - k* mad(reg_clean[,i])
+  bsup <- median(reg_clean[,i]) + k* mad(reg_clean[,i])
+  outlier_idx <- which(reg_no_out_NA[,i] < binf | reg_no_out_NA[,i] > bsup)
+  if (length(outlier_idx) == 0) {
+    reg_no_out_NA = reg_no_out_NA
+  }
+  else{
+    reg_no_out_NA[c(outlier_idx),i] =NA
+  }
+}
+  
+```
+
+```{r message=FALSE, warning=FALSE}
+library(naniar)
+k= 3
+
+lang_no_out_NA <- lang_clean
+for (i in 2:17) {
+  binf <- median(lang_clean[,i]) - k* mad(lang_clean[,i])
+  bsup <- median(lang_clean[,i]) + k* mad(lang_clean[,i])
+  outlier_idx <- which(lang_no_out_NA[,i] < binf | lang_no_out_NA[,i] > bsup)
+  if (length(outlier_idx) == 0) {
+    lang_no_out_NA = lang_no_out_NA
+  }
+  else{
+    lang_no_out_NA[c(outlier_idx),i] =NA
+  }
+}
+  
+```
+
+## Recalcul des colonnes de changement pour toutes les populations
+
+### Calcul des colonnes de variation sans les outliers
+
+Comme nous avons supprimé les lignes contenant des outliers, ils nous faut recalculer les colonnes de variation pour chaque élément, ce qui nous donne ce nouveau DataFrame : 
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+# Ajout des nouvelles colonnes
+
+toua_no_out_NA$N_change <- round(((toua_no_out_NA$N_eCo2-toua_no_out_NA$N_aCo2)/toua_no_out_NA$N_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Fe_change <- round(((toua_no_out_NA$Fe_eCo2-toua_no_out_NA$Fe_aCo2)/toua_no_out_NA$Fe_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Mg_change <- round(((toua_no_out_NA$Mg_eCo2-toua_no_out_NA$Mg_aCo2)/toua_no_out_NA$Mg_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Mn_change <- round(((toua_no_out_NA$Mn_eCo2-toua_no_out_NA$Mn_aCo2)/toua_no_out_NA$Mn_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Na_change <- round(((toua_no_out_NA$Na_eCo2-toua_no_out_NA$Na_aCo2)/toua_no_out_NA$Na_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Zn_change <- round(((toua_no_out_NA$Zn_eCo2-toua_no_out_NA$Zn_aCo2)/toua_no_out_NA$Zn_aCo2)*100, digits = 2)
+
+toua_no_out_NA$C_change <- round(((toua_no_out_NA$C_eCo2-toua_no_out_NA$C_aCo2)/toua_no_out_NA$C_aCo2)*100, digits = 2)
+
+toua_no_out_NA$Cu_change <- round(((toua_no_out_NA$Cu_eCo2-toua_no_out_NA$Cu_aCo2)/toua_no_out_NA$Cu_aCo2)*100, digits = 2)
+```
+
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+library(tidyverse)
+
+reg_no_out_ch <- reg_no_out_NA
+
+reg_no_out_ch <- mutate(reg_no_out_ch,N_change = round(((reg_no_out_NA$N_eCo2-reg_no_out_NA$N_aCo2)/reg_no_out_NA$N_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Fe_change = round(((reg_no_out_NA$Fe_eCo2-reg_no_out_NA$Fe_aCo2)/reg_no_out_NA$Fe_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Mg_change = round(((reg_no_out_NA$Mg_eCo2-reg_no_out_NA$Mg_aCo2)/reg_no_out_NA$Mg_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Mn_change = round(((reg_no_out_NA$Mn_eCo2-reg_no_out_NA$Mn_aCo2)/reg_no_out_NA$Mn_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Na_change = round(((reg_no_out_NA$Na_eCo2-reg_no_out_NA$Na_aCo2)/reg_no_out_NA$Na_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Zn_change = round(((reg_no_out_NA$Zn_eCo2-reg_no_out_NA$Zn_aCo2)/reg_no_out_NA$Zn_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,C_change = round(((reg_no_out_NA$C_eCo2-reg_no_out_NA$C_aCo2)/reg_no_out_NA$C_aCo2)*100, digits = 2)
+)
+
+reg_no_out_ch <- mutate(reg_no_out_ch,Cu_change = round(((reg_no_out_NA$Cu_eCo2-reg_no_out_NA$Cu_aCo2)/reg_no_out_NA$Cu_aCo2)*100, digits = 2)
+)
+```
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+library(tidyverse)
+
+lang_no_out_ch <- lang_no_out_NA
+
+lang_no_out_ch <- mutate(lang_no_out_ch,N_change = round(((lang_no_out_NA$N_eCo2-lang_no_out_NA$N_aCo2)/lang_no_out_NA$N_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Fe_change = round(((lang_no_out_NA$Fe_eCo2-lang_no_out_NA$Fe_aCo2)/lang_no_out_NA$Fe_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Mg_change = round(((lang_no_out_NA$Mg_eCo2-lang_no_out_NA$Mg_aCo2)/lang_no_out_NA$Mg_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Mn_change = round(((lang_no_out_NA$Mn_eCo2-lang_no_out_NA$Mn_aCo2)/lang_no_out_NA$Mn_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Na_change = round(((lang_no_out_NA$Na_eCo2-lang_no_out_NA$Na_aCo2)/lang_no_out_NA$Na_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Zn_change = round(((lang_no_out_NA$Zn_eCo2-lang_no_out_NA$Zn_aCo2)/lang_no_out_NA$Zn_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,C_change = round(((lang_no_out_NA$C_eCo2-lang_no_out_NA$C_aCo2)/lang_no_out_NA$C_aCo2)*100, digits = 2)
+)
+
+lang_no_out_ch <- mutate(lang_no_out_ch,Cu_change = round(((lang_no_out_NA$Cu_eCo2-lang_no_out_NA$Cu_aCo2)/lang_no_out_NA$Cu_aCo2)*100, digits = 2)
+)
+```
+
+## Création des dataFrames de colonnes de changement et de changement en format long 
+
+```{r}
+toua_ch <- select(toua_no_out_NA,"genotype"|contains("change"))
+toua_chl <- gather(data = toua_ch, key = "element", value = "valeur", 2:9)
+
+reg_ch <- select(reg_no_out_ch,"genotype"|contains("change"))
+reg_chl <- gather(data = reg_ch, key = "element", value = "valeur", 2:9)
+
+lang_ch <- select(lang_no_out_ch,"genotype"|contains("change"))
+lang_chl <- gather(data = lang_ch, key = "element", value = "valeur", 2:9)
+
+```
+
+## Création de formats longs pour chaque population
+
+```{r}
+toua_no_out_no_ch = toua_no_out_NA
+toua_no_out_no_ch = subset (toua_no_out_no_ch, select = -c(N_change:Cu_change))
+toua_long = melt(toua_no_out_no_ch)
+toua_long$element = stringr::str_split_fixed(toua_long$variable, "_",2)[,1]
+toua_long$Co2 = stringr::str_split_fixed(toua_long$variable, "_",2)[,2]
+
+reg_no_out_no_ch = reg_no_out_NA
+reg_long = melt(reg_no_out_no_ch)
+reg_long$element = stringr::str_split_fixed(reg_long$variable, "_",2)[,1]
+reg_long$Co2 = stringr::str_split_fixed(reg_long$variable, "_",2)[,2]
+
+lang_no_out_no_ch = lang_no_out_NA
+lang_long = melt(lang_no_out_no_ch)
+lang_long$element = stringr::str_split_fixed(lang_long$variable, "_",2)[,1]
+lang_long$Co2 = stringr::str_split_fixed(lang_long$variable, "_",2)[,2]
+
+
+```
+## Création du dataframe regoupant les trois populations
+
+```{r}
+toua_long$pop = "TOUA"
+reg_long$pop = "REG"
+lang_long$pop = "LANG"
+
+df_trois_pop = rbind(toua_long, reg_long, lang_long) 
+
+toua_chl$pop = "TOUA"
+reg_chl$pop = "REG"
+lang_chl$pop = "LANG"
+
+df_trois_pop_chl = rbind(toua_chl, reg_chl, lang_chl)
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(hrbrthemes)
+library(viridis)
+```
+
+```{r fig.height=7, fig.width=7}
+ggplot(df_trois_pop_chl, aes(element, valeur, fill = element))+
+  stat_summary(fun = "mean", geom = "bar") +
+  stat_summary(fun.data = mean_se , geom = "errorbar", width = 0.2)+
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed", size = 1) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme_bw()+
+  ylab(label="évolution relative entre Co2 ambiant et élevé (%)")+
+  labs(title ="Evolution relative entre condition de Co2 ambiant et élevé ", subtitle = "pour chaque élément en regroupant toutes les populations")
+  
+ggplot(df_trois_pop_chl, aes(element, valeur, color = pop))+
+  stat_summary(fun = mean, geom = "point", size = 3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, size = 1.5)+
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed" ) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  theme_bw()+
+  ylab("évolution relative entre Co2 ambiant et élevé (%)")+
+  labs(title =  "Evolution relative entre condition de Co2 ambiant et élevé ", subtitle = "pour chaque élément et pour chaque population")
+  
+
+
+```
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
